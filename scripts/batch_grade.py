@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """
-批量整理 Chaoxing 作业附件，给 agent 逐份阅读评分提供素材。
-用法：python scripts/batch_grade.py --base-dir "作业解压目录"
-输出：控制台汇总 + CSV 素材清单。
+Prepare Chaoxing/Xuexitong assignment attachments for agent-assisted grading.
 
-⚠️ 自动支持 .docx 和 .doc 格式，无需手动切换。
+The script extracts report text from .docx/.doc files, expands common nested
+"one zip per student" exports, and writes a CSV material list. It does not
+assign grades by itself.
 """
 
-import os
-import csv
-import struct
 import argparse
+import csv
+import os
+import struct
 import sys
 import zipfile
 
 
 REPORT_TEMPLATE_KEYWORDS = ("V2024", "模板", "template")
 STUDENT_ARCHIVE_DIR = "__unzipped__"
+DEFAULT_MIN_CHARS = 50
+
 SECTION_KEYWORDS = [
     ("basic", ["课程名称", "项目名称", "实验/实训报告", "学生姓名", "学号"]),
     ("purpose_or_type", ["实验目的", "实验类型", "设计性实验", "验证性实验", "项目名称"]),
@@ -28,7 +30,7 @@ SECTION_KEYWORDS = [
 
 
 def open_zip_with_encoding(zip_path, encoding="gbk"):
-    """Open zip with GBK fallback while honoring UTF-8 filename flags."""
+    """Open a zip with GBK fallback while honoring UTF-8 filename flags."""
     with zipfile.ZipFile(zip_path) as probe:
         has_utf8_names = any(info.flag_bits & 0x800 for info in probe.infolist())
     if has_utf8_names:
@@ -40,7 +42,7 @@ def open_zip_with_encoding(zip_path, encoding="gbk"):
 
 
 def safe_extract_zip(zip_path, output_dir, encoding="gbk"):
-    """Extract a zip safely, preserving UTF-8 or GBK names as appropriate."""
+    """Extract a zip safely, preserving UTF-8 or GBK names where possible."""
     base = os.path.abspath(output_dir)
     os.makedirs(base, exist_ok=True)
     with open_zip_with_encoding(zip_path, encoding) as zf:
@@ -52,120 +54,133 @@ def safe_extract_zip(zip_path, output_dir, encoding="gbk"):
 
 
 def prepare_student_dir(student_dir):
-    """Return a directory containing files to inspect, expanding nested student zips."""
-    if any(f.lower().endswith((".docx", ".doc")) for f in os.listdir(student_dir)):
-        return student_dir
+    """Return a directory to inspect, expanding nested student zips if needed."""
+    if any(name.lower().endswith((".docx", ".doc")) for name in os.listdir(student_dir)):
+        return student_dir, False
 
     zip_files = [
-        f for f in os.listdir(student_dir)
-        if f.lower().endswith(".zip") and os.path.isfile(os.path.join(student_dir, f))
+        name for name in os.listdir(student_dir)
+        if name.lower().endswith(".zip") and os.path.isfile(os.path.join(student_dir, name))
     ]
     if not zip_files:
-        return student_dir
+        return student_dir, False
 
     expanded = os.path.join(student_dir, STUDENT_ARCHIVE_DIR)
     os.makedirs(expanded, exist_ok=True)
     for zip_name in zip_files:
         safe_extract_zip(os.path.join(student_dir, zip_name), expanded)
-    return expanded
+    return expanded, True
 
 
-def get_report_text(student_dir):
-    """自动检测 .docx/.doc 并提取全部文字（段落 + 表格单元格）
+def docx_text(path):
+    from docx import Document
 
-    ⚠️ 超星实验报告模板使用表格布局，绝大部分内容在 table cells 里！
-    只读 paragraphs 会得到 150-200 字的空表头。
+    doc = Document(path)
+    texts = []
+    for para in doc.paragraphs:
+        if para.text.strip():
+            texts.append(para.text.strip())
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                if cell.text.strip():
+                    texts.append(cell.text.strip())
+    return "\n".join(texts)
 
-    优先 .docx（python-docx 提取更完整），fallback 到 .doc（OLE2 解析）。
-    返回 (text, file_path, format_type)。
-    """
-    try:
-        from docx import Document
-    except ImportError:
-        Document = None
-    try:
-        import olefile
-    except ImportError:
-        olefile = None
 
+def doc_text(path):
+    import olefile
+
+    ole = olefile.OleFileIO(path)
+    if not ole.exists("WordDocument"):
+        return ""
+    raw = ole.openstream("WordDocument").read()
+    text_parts, current = [], []
+    i = 0
+    while i < len(raw) - 1:
+        char = struct.unpack("<H", raw[i:i + 2])[0]
+        if (
+            0x20 <= char <= 0x7E
+            or 0x4E00 <= char <= 0x9FFF
+            or 0x3000 <= char <= 0x303F
+            or 0xFF00 <= char <= 0xFFEF
+            or char in (0x0D, 0x0A, 0x09)
+        ):
+            current.append(chr(char))
+        else:
+            if len(current) > 3:
+                text_parts.append("".join(current))
+            current = []
+        i += 2
+    if len(current) > 3:
+        text_parts.append("".join(current))
+    return "\n".join(text_parts)
+
+
+def candidate_reports(student_dir):
     files = os.listdir(student_dir)
-
-    # 1) 优先找 .docx（排除模板文件）
-    report_docxs = [f for f in files if f.lower().endswith('.docx') and not any(
-        kw in f for kw in REPORT_TEMPLATE_KEYWORDS
-    )]
-    if not report_docxs:
-        report_docxs = [f for f in files if f.lower().endswith('.docx')]
-
-    if Document:
-        for f in report_docxs:
-            path = os.path.join(student_dir, f)
-            try:
-                doc = Document(path)
-                texts = []
-                for para in doc.paragraphs:
-                    if para.text.strip():
-                        texts.append(para.text.strip())
-                for table in doc.tables:
-                    for row in table.rows:
-                        for cell in row.cells:
-                            if cell.text.strip():
-                                texts.append(cell.text.strip())
-                text = "\n".join(texts)
-                if len(text) > 50:
-                    return text, path, 'docx'
-            except Exception:
-                pass
-
-    # 2) Fallback: .doc (OLE2 格式)
-    report_docs = [f for f in files if f.lower().endswith('.doc') and not f.lower().endswith('.docx')]
-    if olefile:
-        for f in report_docs:
-            path = os.path.join(student_dir, f)
-            try:
-                ole = olefile.OleFileIO(path)
-                if not ole.exists('WordDocument'):
-                    continue
-                raw = ole.openstream('WordDocument').read()
-                text_parts, current = [], []
-                i = 0
-                while i < len(raw) - 1:
-                    char = struct.unpack('<H', raw[i:i+2])[0]
-                    if (0x20 <= char <= 0x7E or 0x4E00 <= char <= 0x9FFF or
-                        0x3000 <= char <= 0x303F or 0xFF00 <= char <= 0xFFEF or
-                        char in (0x0D, 0x0A, 0x09)):
-                        current.append(chr(char))
-                    else:
-                        if len(current) > 3:
-                            text_parts.append(''.join(current))
-                        current = []
-                    i += 2
-                if len(current) > 3:
-                    text_parts.append(''.join(current))
-                text = '\n'.join(text_parts)
-                if len(text) > 50:
-                    return text, path, 'doc'
-            except Exception:
-                pass
-
-    return "", None, "none"
+    docxs = [
+        name for name in files
+        if name.lower().endswith(".docx")
+        and not any(keyword.lower() in name.lower() for keyword in REPORT_TEMPLATE_KEYWORDS)
+    ]
+    if not docxs:
+        docxs = [name for name in files if name.lower().endswith(".docx")]
+    docs = [name for name in files if name.lower().endswith(".doc") and not name.lower().endswith(".docx")]
+    return [(os.path.join(student_dir, name), "docx") for name in docxs] + [
+        (os.path.join(student_dir, name), "doc") for name in docs
+    ]
 
 
-def count_report_images(student_dir, format_type, report_path):
-    """统计报告中的图片数量，自动处理 .docx 和 .doc"""
-    if format_type == 'docx':
+def get_report_text(student_dir, min_chars=DEFAULT_MIN_CHARS):
+    """
+    Return (text, path, format, status).
+
+    status values:
+    - ok: readable report with enough text for normal review
+    - too_short: readable report found, but text is below min_chars
+    - unreadable: report-like files exist but could not be parsed
+    - missing_report: no .doc/.docx report found
+    """
+    reports = candidate_reports(student_dir)
+    if not reports:
+        return "", None, "none", "missing_report"
+
+    best_short = None
+    unreadable = False
+    for path, fmt in reports:
+        try:
+            text = docx_text(path) if fmt == "docx" else doc_text(path)
+        except Exception:
+            unreadable = True
+            continue
+
+        if len(text) >= min_chars:
+            return text, path, fmt, "ok"
+        if text and (best_short is None or len(text) > len(best_short[0])):
+            best_short = (text, path, fmt)
+
+    if best_short:
+        text, path, fmt = best_short
+        return text, path, fmt, "too_short"
+    return "", None, "none", "unreadable" if unreadable else "missing_report"
+
+
+def count_report_images(format_type, report_path):
+    """Count report images. .doc image count is estimated from file size."""
+    if not report_path:
+        return 0
+    if format_type == "docx":
         try:
             from docx import Document
             doc = Document(report_path)
             return sum(1 for rel in doc.part.rels.values() if "image" in rel.reltype)
         except Exception:
             return 0
-    elif format_type == 'doc':
-        # .doc 图片：通过文件大小估算
+    if format_type == "doc":
         size = os.path.getsize(report_path)
         if size > 500000:
             return max(3, min(15, (size - 200000) // 150000))
-        return 0
     return 0
 
 
@@ -176,7 +191,7 @@ def preview_text(full_text, limit=220):
 
 
 def optional_metrics(full_text):
-    """Optional rough signals; use only when the user chose metric-assisted grading."""
+    """Return rough signals for optional metric-assisted screening."""
     section_count = sum(
         1 for _, keywords in SECTION_KEYWORDS
         if any(keyword in full_text for keyword in keywords)
@@ -190,35 +205,35 @@ def optional_metrics(full_text):
         if idx >= 0
     ]
     summary_text = full_text[min(summary_positions):] if summary_positions else ""
-    has_reflection = any(k in summary_text for k in [
+    has_reflection = any(keyword in summary_text for keyword in [
         "对比", "分析", "差异", "认识", "理解", "掌握", "发现",
         "体会", "学到", "提升", "效率", "优缺点", "特点",
     ])
     return min(6, section_count), has_reflection
 
 
-def analyze_student(student_dir_name, include_metrics=False):
-    """整理单个学生作业素材，返回给 agent 阅读用的元数据。"""
-    student_dir = os.path.join(EXTRACT_DIR, student_dir_name)
+def analyze_student(extract_dir, student_dir_name, include_metrics=False, min_chars=DEFAULT_MIN_CHARS):
+    student_dir = os.path.join(extract_dir, student_dir_name)
     if not os.path.isdir(student_dir):
         return None
-    inspect_dir = prepare_student_dir(student_dir)
+    inspect_dir, expanded_zip = prepare_student_dir(student_dir)
 
     parts = student_dir_name.split("-", 1)
-    student_id = parts[0] if len(parts) > 0 else student_dir_name
-    student_name = parts[1] if len(parts) > 1 else "未知"
+    student_id = parts[0] if parts else student_dir_name
+    student_name = parts[1] if len(parts) > 1 else "unknown"
 
-    # 统一提取文字（自动处理 .docx 和 .doc）
-    full_text, report_path, fmt = get_report_text(inspect_dir)
-    img_count = count_report_images(inspect_dir, fmt, report_path) if report_path else 0
+    full_text, report_path, fmt, status = get_report_text(inspect_dir, min_chars=min_chars)
+    img_count = count_report_images(fmt, report_path)
 
     result = {
         "student_id": student_id,
         "student_name": student_name,
         "dir_name": student_dir_name,
+        "status": status,
         "format": fmt,
         "char_count": len(full_text),
         "img_count": img_count,
+        "expanded_zip": expanded_zip,
         "report_path": report_path or "",
         "preview": preview_text(full_text),
     }
@@ -232,7 +247,7 @@ def analyze_student(student_dir_name, include_metrics=False):
 
 
 def resolve_extract_dir(base_dir):
-    """兼容常见解压结构：base_dir/docx_files、base_dir/extracted 或 base_dir 本身。"""
+    """Support common export layouts: base/docx_files, base/extracted, or base."""
     for name in ("docx_files", "extracted"):
         candidate = os.path.join(base_dir, name)
         if os.path.isdir(candidate):
@@ -241,7 +256,7 @@ def resolve_extract_dir(base_dir):
 
 
 def ensure_student_dirs(extract_dir):
-    """If Chaoxing exported one zip per student, expand them into student folders."""
+    """If Chaoxing exported one zip per student at top level, expand them."""
     for name in os.listdir(extract_dir):
         path = os.path.join(extract_dir, name)
         if not os.path.isfile(path) or not name.lower().endswith(".zip"):
@@ -252,30 +267,78 @@ def ensure_student_dirs(extract_dir):
         safe_extract_zip(path, target)
 
 
+def sample_results(results, sample_size):
+    if not sample_size or sample_size >= len(results):
+        return results
+    if sample_size <= 0:
+        return []
+    if sample_size == 1:
+        return [results[0]]
+
+    last = len(results) - 1
+    indexes = sorted({round(i * last / (sample_size - 1)) for i in range(sample_size)})
+    return [results[i] for i in indexes]
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="批量整理 Chaoxing 作业附件，供 agent 逐份阅读评分。")
+    parser = argparse.ArgumentParser(
+        description="Prepare Chaoxing assignment materials for agent-assisted grading."
+    )
     parser.add_argument(
         "--base-dir",
         default=os.getcwd(),
-        help="作业包解压目录；可直接指向含学生子目录的目录，或其上级目录。",
+        help="Extracted assignment directory, or a parent containing docx_files/extracted.",
     )
     parser.add_argument(
         "--output-csv",
         default=None,
-        help="CSV 输出路径；默认写入 base-dir/grading_materials.csv。",
+        help="CSV output path. Defaults to base-dir/grading_materials.csv or grading_metrics.csv.",
     )
     parser.add_argument(
         "--mode",
         choices=("materials", "metrics"),
         default="materials",
-        help="materials: 只整理素材，默认；metrics: 额外输出粗略指标信号，需用户明确选择。",
+        help="materials only, or metrics with rough section/reflection signals.",
+    )
+    parser.add_argument(
+        "--sample",
+        type=int,
+        default=0,
+        help="Print only a representative sample in the console; CSV still includes all rows.",
+    )
+    parser.add_argument(
+        "--min-chars",
+        type=int,
+        default=DEFAULT_MIN_CHARS,
+        help=f"Minimum extracted text length for status=ok. Default: {DEFAULT_MIN_CHARS}.",
     )
     return parser.parse_args()
 
 
-def main():
-    global EXTRACT_DIR
+def print_rows(rows, include_metrics):
+    if include_metrics:
+        print("MODE: metrics (rough signals only; still read submissions before grading)")
+        print(f"{'student_id':<12} {'name':<12} {'status':<14} {'fmt':<5} {'chars':>6} {'imgs':>4} {'sec':>5} {'refl':>5}  report")
+    else:
+        print("MODE: materials (organize files only; no automatic grading)")
+        print(f"{'student_id':<12} {'name':<12} {'status':<14} {'fmt':<5} {'chars':>6} {'imgs':>4}  report")
+    print("-" * 96)
+    for row in rows:
+        if include_metrics:
+            reflection = "yes" if row["reflection_signal"] else "no"
+            print(
+                f"{row['student_id']:<12} {row['student_name']:<12} {row['status']:<14} "
+                f"{row['format']:<5} {row['char_count']:>6} {row['img_count']:>4} "
+                f"{row['section_signal']:>4}/6 {reflection:>5}  {row['report_path']}"
+            )
+        else:
+            print(
+                f"{row['student_id']:<12} {row['student_name']:<12} {row['status']:<14} "
+                f"{row['format']:<5} {row['char_count']:>6} {row['img_count']:>4}  {row['report_path']}"
+            )
 
+
+def main():
     args = parse_args()
     base_dir = os.path.abspath(args.base_dir)
     include_metrics = args.mode == "metrics"
@@ -284,54 +347,40 @@ def main():
 
     extract_dir = resolve_extract_dir(base_dir)
     if not os.path.isdir(extract_dir):
-        print(f"ERROR: {extract_dir} not found. Unzip first.")
+        print(f"ERROR: {extract_dir} not found. Unzip first.", file=sys.stderr)
         return 1
 
-    EXTRACT_DIR = extract_dir
-    ensure_student_dirs(EXTRACT_DIR)
+    ensure_student_dirs(extract_dir)
 
     results = []
-    for d in sorted(os.listdir(extract_dir)):
-        r = analyze_student(d, include_metrics=include_metrics)
-        if r:
-            results.append(r)
+    for name in sorted(os.listdir(extract_dir)):
+        row = analyze_student(extract_dir, name, include_metrics=include_metrics, min_chars=args.min_chars)
+        if row:
+            results.append(row)
 
-    # 打印汇总
-    if include_metrics:
-        print("MODE: metrics (粗略指标仅作辅助，不能替代 agent 逐份阅读)")
-        print(f"{'学号':<12} {'姓名':<10} {'格式':<5} {'字符':>6} {'图片':>4} {'指标':>4} {'反思':>4}  报告文件")
+    display_rows = sample_results(sorted(results, key=lambda row: row["student_id"]), args.sample)
+    print_rows(display_rows, include_metrics=include_metrics)
+    if args.sample:
+        print(f"\nShowing {len(display_rows)} of {len(results)} submissions. CSV includes all rows.")
     else:
-        print("MODE: materials (默认，只整理素材)")
-        print(f"{'学号':<12} {'姓名':<10} {'格式':<5} {'字符':>6} {'图片':>4}  报告文件")
-    print("-" * 60)
-    for r in sorted(results, key=lambda x: -x["char_count"]):
-        if include_metrics:
-            reflection = "yes" if r["reflection_signal"] else "no"
-            print(
-                f"{r['student_id']:<12} {r['student_name']:<10} {r['format']:<5} "
-                f"{r['char_count']:>6} {r['img_count']:>4} {r['section_signal']:>4}/6 "
-                f"{reflection:>4}  {r['report_path']}"
-            )
-        else:
-            print(
-                f"{r['student_id']:<12} {r['student_name']:<10} {r['format']:<5} "
-                f"{r['char_count']:>6} {r['img_count']:>4}  {r['report_path']}"
-            )
+        print(f"\nTotal submissions: {len(results)}")
 
-    print(f"\n共 {len(results)} 份作业")
+    status_counts = {}
+    for row in results:
+        status_counts[row["status"]] = status_counts.get(row["status"], 0) + 1
+    print("Status counts: " + ", ".join(f"{k}={v}" for k, v in sorted(status_counts.items())))
 
-    # 写 CSV
-    with open(output_csv, "w", newline="", encoding="utf-8-sig") as f:
+    with open(output_csv, "w", newline="", encoding="utf-8-sig") as file:
         fieldnames = [
-            "student_id", "student_name", "dir_name", "format", "char_count",
-            "img_count", "report_path", "preview"
+            "student_id", "student_name", "dir_name", "status", "format",
+            "char_count", "img_count", "expanded_zip", "report_path", "preview",
         ]
         if include_metrics:
             fieldnames.extend(["section_signal", "reflection_signal"])
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results)
-    print(f"报告已保存: {output_csv}")
+    print(f"CSV saved: {output_csv}")
     return 0
 
 
