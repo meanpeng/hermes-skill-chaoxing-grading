@@ -2,7 +2,6 @@
 name: chaoxing-assignment-grading
 description: "Use when grading Chaoxing/Xuexitong assignments. Teacher workflow: login, browse courses, download submissions, analyze quality, auto-grade, submit scores."
 version: 1.0.0
-author: 闵鹏 (Min Peng)
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
