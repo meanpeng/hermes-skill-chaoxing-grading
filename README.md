@@ -118,9 +118,6 @@ git clone https://github.com/meanpeng/hermes-skill-chaoxing-grading.git ~/.herme
 
 MIT License - 详见 [LICENSE](LICENSE)
 
-## 作者
-
-闵鹏 (Min Peng) - 成都锦城学院教师
 
 ## 贡献
 
