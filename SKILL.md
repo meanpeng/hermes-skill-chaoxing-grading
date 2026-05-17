@@ -272,7 +272,7 @@ from docx import Document
 def get_report_text(student_dir):
     """自动检测 .docx/.doc 并提取全部文字（段落 + 表格单元格）
     
-    ⚠️ 超星实验报告模板使用表格布局，绝大部分内容在 table cells 里！
+    ⚠️ 部分学校的实验报告模板使用表格布局，内容可能在 table cells 里！
     只读 paragraphs 会得到 150-200 字的空表头。
     
     优先 .docx（python-docx 提取更完整），fallback 到 .doc（OLE2 解析）。
@@ -435,7 +435,7 @@ def extract_doc_text(filepath):
 
 ### 批改 Pitfalls
 - DOCX 文件名可能是 GBK 编码（`unzip -O GBK`）
-- **⚠️ 超星实验报告模板使用表格布局，绝大部分内容在 table cells 里！** 只读 paragraphs 会得到 150-200 字的空表头
+- **⚠️ 部分学校的实验报告模板使用表格布局，内容可能在 table cells 里！** 只读 paragraphs 会得到 150-200 字的空表头
 - **⚠️ 学生可能提交 .doc 或 .docx，必须两种都支持**：用 `get_report_text(student_dir)` 自动检测，不要只看 .docx
 - **⚠️ .doc 图片无法精确计数**：通过文件大小估算（>500KB ≈ 有图片，纯文字 < 200KB）
 - **⚠️ 有些 .docx 文件名含乱码（GBK 编码问题）但内容正常**，不影响文字提取
