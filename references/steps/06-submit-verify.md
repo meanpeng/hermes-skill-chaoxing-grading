@@ -105,7 +105,7 @@ python scripts/submit_scores.py \
 
 Confirmed `list-input` writes call `/mooc2-ans/work/markscore` with one `workAnswerId` at a time. Use only after the write preflight is confirmed.
 
-If the script reports fewer `mark_rows` than the expected submitted count, do not guess that the unmatched students are absent or unsubmitted. Use the paged review-list DOM or exported grade table to fill the missing `workAnswerId` values before writing.
+If the script reports fewer `mark_rows` than the expected submitted count, do not guess that the unmatched students are absent or unsubmitted. First inspect `mark_page_stats`: each requested page should add new rows. If page 2 repeats page 1, use the browser review-list DOM pagination or exported grade table to fill the missing `workAnswerId` values before writing.
 
 ## XLS Export/Edit/Import
 

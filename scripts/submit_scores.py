@@ -96,6 +96,8 @@ def mark_list_params(args, page_num):
         "sort": "0",
         "order": "0",
         "status": "0",
+        "pages": str(page_num),
+        "size": "20",
         "pageNum": str(page_num),
         "pageSize": "20",
     }
@@ -127,6 +129,7 @@ def parse_mark_list_rows(html):
 def get_mark_list(opener, args, expected_count=0):
     rows = []
     seen_answer_ids = set()
+    page_stats = []
     page_size = 20
     auto_pages = max(1, (expected_count + page_size - 1) // page_size) if expected_count else 1
     requested_pages = max(0, args.mark_pages or 0)
@@ -140,6 +143,7 @@ def get_mark_list(opener, args, expected_count=0):
             row for row in page_rows
             if row["workAnswerId"] and row["workAnswerId"] not in seen_answer_ids
         ]
+        page_stats.append({"page": page_num, "rows": len(page_rows), "new_rows": len(new_rows)})
         for row in new_rows:
             seen_answer_ids.add(row["workAnswerId"])
             rows.append(row)
@@ -152,7 +156,7 @@ def get_mark_list(opener, args, expected_count=0):
             break
         if not page_rows:
             break
-    return rows
+    return rows, page_stats
 
 
 def first_match(text, pattern):
@@ -283,6 +287,12 @@ def output_result(result, as_json):
         f"unsubmitted={result['unsubmitted']} mark_pages={result['mark_pages']} "
         f"mark_rows={result['mark_rows']} targets={len(result['plan'])}"
     )
+    if result.get("mark_page_stats"):
+        stats = ", ".join(
+            f"p{item['page']}={item['rows']} rows/{item['new_rows']} new"
+            for item in result["mark_page_stats"]
+        )
+        print(f"mark_page_stats: {stats}")
     if result["errors"]:
         print("Errors:")
         for error in result["errors"]:
@@ -307,7 +317,7 @@ def main():
     info = get_work_info(opener, args)
     submitted = int(info["submitCount"])
     unsubmitted = int(info["noSubmitCount"])
-    mark_rows = get_mark_list(opener, args, expected_count=submitted)
+    mark_rows, mark_page_stats = get_mark_list(opener, args, expected_count=submitted)
     score_rows = load_scores(args.scores_csv)
     plan, errors = build_plan(score_rows, mark_rows, float(info["score"]))
     if submitted and len(mark_rows) < submitted:
@@ -327,6 +337,7 @@ def main():
         "unsubmitted": unsubmitted,
         "mark_rows": len(mark_rows),
         "mark_pages": args.mark_pages or "auto",
+        "mark_page_stats": mark_page_stats,
         "plan": plan,
         "errors": errors,
     }
