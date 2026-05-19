@@ -53,6 +53,21 @@ Treat these fields as reading aids, not automatic grades:
 - `section_signal`
 - `reflection_signal`
 
+## Agent-Side Unreadable Confirmation
+
+Treat `status=unreadable` as a required direct inspection path for the agent, not as an immediate teacher-review item.
+
+Before reporting an unreadable submission as unresolved:
+
+1. Open the student's extracted folder and personally inspect available candidates: another `.docx`, `.doc`, nested zip, PDF, or original attachment.
+2. If there are nested archives or attachments, inspect their contents directly with local tools rather than only relying on the material-prep CSV.
+3. If a Word report is unreadable, try an appropriate local reader/extractor for that file type and inspect file size/content signals before deciding it is unresolved.
+4. If the confirmed scoring mode permits material access, inspect an already downloaded PDF/original-attachment package for the same assignment, or safely obtain that alternate package using the dry-run-first download flow and inspect the relevant student's file.
+
+Rerunning `prepare_work_materials.py` or `batch_grade.py` is not the confirmation step. Scripts can help locate or summarize files, but the confirmation must come from the agent's direct inspection of the student's candidate files.
+
+Only after these direct inspection attempts fail should the final score draft list the student as requiring teacher review, and the reason must say which files or alternatives were inspected.
+
 ## Export From Chaoxing
 
 Prefer the dry-run-first download script for repeated exports:
@@ -151,4 +166,5 @@ python scripts/extract_work_zip.py output.zip -d output_dir
 - `.docx`: `batch_grade.py` reads paragraphs and table cells.
 - `.doc`: text extraction is best-effort and image count is estimated.
 - `too_short` means a readable report exists but is below `--min-chars`; it is not the same as `missing_report`.
+- `unreadable` must be checked through direct agent-side file inspection before teacher-facing review.
 - Do not grade image-heavy reports from text length alone.

@@ -56,7 +56,7 @@ def suggest_score(row, posture="lenient"):
     if status == "missing_report":
         return 55, "manual_review"
     if status == "unreadable":
-        return 60, "manual_review"
+        return 60, "auto_confirm_unreadable"
 
     score = 70
 
@@ -91,6 +91,7 @@ Clamp the returned score to the teacher-confirmed score range before showing the
 - Blank process/result text can be acceptable when screenshots show the work.
 - Missing or weak reflection is a meaningful penalty even if screenshots exist.
 - Identical or near-identical submissions need group comparison, not isolated scoring.
+- `unreadable` means agent-side direct file inspection is required before teacher-facing review: open alternate report candidates, nested archives/attachments, and available PDF/original-attachment packages with appropriate local tools. Rerunning the material-prep script is not enough. Keep it out of the final manual-review list until direct inspection attempts fail.
 - Any score below 70 for a submitted report needs a written defect in `penalty_reason`.
 - Any score of 100 needs concrete evidence of completeness in `evidence`.
 
@@ -111,4 +112,4 @@ Use this CSV schema for scripts or saved artifacts:
 student_id,student_name,score,band,evidence,penalty_reason,needs_manual_review,workAnswerId
 ```
 
-Keep `needs_manual_review=true` until the uncertain evidence has been inspected.
+Keep `needs_manual_review=true` until uncertain evidence has been inspected. For `unreadable`, the inspecting party is the agent first; escalate to teacher review only after direct local file inspection fails.

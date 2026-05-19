@@ -16,7 +16,7 @@ Do not invent content-based evidence, penalties, or quality claims.
 
 ## Concise Mode
 
-Use `batch_grade.py` material and metrics output as rough evidence. Inspect flagged or ambiguous cases only.
+Use `batch_grade.py` material and metrics output as rough evidence. Inspect flagged or ambiguous cases only. For `unreadable` cases, complete the direct agent-side file inspection path in `references/steps/04-materials.md` before treating them as teacher-facing manual-review items.
 
 Useful calibration table:
 
@@ -106,7 +106,7 @@ Chinese score draft response template:
 
 Rules:
 
-- Set `needs_manual_review=true` for unreadable, missing, suspiciously duplicated, image-heavy but not inspected, or mismatched submissions.
+- Set `needs_manual_review=true` for unresolved unreadable cases only after direct agent-side file inspection fails, and for missing, suspiciously duplicated, image-heavy but not inspected, or mismatched submissions.
 - Do not assign below 70 to a submitted experiment report unless `penalty_reason` states the major defect.
 - Do not assign 100 unless `evidence` states why it is complete enough for full credit.
 - Keep similar submissions within a narrow score range unless a concrete difference is documented.

@@ -32,6 +32,8 @@ If a required field is unknown, collect it before moving to the next phase.
    When the course/class/assignment context is Chinese, use the Chinese scoring setup template in `references/steps/03-scoring-setup.md` so the teacher supplies both fields explicitly.
 3. If mode is `random`, do not download, open, export, extract, or parse assignment files. Use only the student list/IDs and label evidence as `teacher-selected random scoring; assignment not inspected`.
 4. If mode is `concise`, use metadata and metrics only as rough evidence. Inspect flagged or ambiguous cases.
+   - `unreadable` is an agent action item, not a teacher action item. Before listing it as needing teacher review, the agent must personally inspect the student's local files and available alternatives: open another report candidate in the student's folder, inspect nested archives/attachments, examine the file with an appropriate reader or extractor, and use a downloaded PDF/original-attachment package if available or safely obtainable under the confirmed mode.
+   - Do not treat rerunning the material-prep script as the confirmation step. Scripts may locate files, but the confirmation is the agent's direct inspection of the candidate files. Only mark an `unreadable` submission for teacher review after direct inspection attempts fail, and report which files/alternatives were inspected.
 5. If mode is `detailed`, inspect every available assignment file before scoring.
 6. Before writing scores, show the exact score list, target course/class/assignment, write method, unsubmitted count, and remaining manual-review count.
 7. Write only after the teacher explicitly confirms that exact final write plan in the current turn.

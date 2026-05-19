@@ -86,7 +86,10 @@ Use this exact CSV schema only for scripts or saved artifacts:
 student_id,student_name,score,band,evidence,penalty_reason,needs_manual_review,workAnswerId
 ```
 
-Set `needs_manual_review=true` for unreadable, missing, suspicious, mismatched, or image-heavy submissions that have not been visually inspected.
+For `unreadable` rows, first perform agent-side direct confirmation before assigning teacher-facing review:
+open and inspect alternate report candidates, nested archives/attachments, and any already downloaded PDF/original-attachment package. If the confirmed scoring mode allows it and the package is not already available, safely obtain the alternate package before asking the teacher to review. Rerunning the material-prep script is not sufficient confirmation; it can only help locate files.
+
+Set `needs_manual_review=true` only for unresolved unreadable rows after direct agent inspection fails, or for missing, suspicious, mismatched, or image-heavy submissions that have not been visually inspected.
 
 Every score must be inside the confirmed score range. In `random` mode, do not invent content-based evidence.
 

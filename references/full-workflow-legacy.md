@@ -447,7 +447,7 @@ Scoring rules that must stay explicit:
 
 - Every `score` must be inside the teacher-confirmed score range.
 - `random` mode evidence must state that assignment content was not inspected; do not invent content-based reasons.
-- `needs_manual_review=true` when the report is unreadable, missing, suspiciously duplicated, image-heavy but not inspected, or mismatched to the assignment.
+- `needs_manual_review=true` when the report remains unreadable after direct agent-side file inspection, or when it is missing, suspiciously duplicated, image-heavy but not inspected, or mismatched to the assignment. For unreadable reports, the agent must first open and inspect alternate report candidates, nested archives/attachments, and available PDF/original-attachment packages before asking the teacher to review. Rerunning a material-prep script is not sufficient confirmation.
 - Do not assign below 70 to a submitted experiment report unless the evidence column states the major defect.
 - Do not assign 100 unless the evidence column states why it is complete enough for full credit.
 - Keep similar submissions within a narrow score range unless a concrete difference is documented.
