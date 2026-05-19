@@ -71,7 +71,16 @@ Do not produce a full write plan until this gate is passed.
 
 ## 5. Score Draft Schema
 
-Use this exact schema:
+Keep teacher-facing output separate from machine input. Show the teacher a Chinese Markdown table:
+
+```text
+| 学号 | 姓名 | 分数 | 档位 | 建议复核 | 说明 |
+|---|---|---:|---|---|---|
+```
+
+Use short Chinese reasons in `说明`; do not paste raw `metrics: chars=..., images=...` strings in the main response.
+
+Use this exact CSV schema only for scripts or saved artifacts:
 
 ```csv
 student_id,student_name,score,band,evidence,penalty_reason,needs_manual_review,workAnswerId

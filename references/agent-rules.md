@@ -47,6 +47,8 @@ If a required field is unknown, collect it before moving to the next phase.
 
 ## Required Score Draft Schema
 
+For teacher-facing messages, show score drafts and write confirmations as concise Markdown tables in Chinese. Do not paste raw CSV or raw metric strings as the default response. Convert evidence into short human-readable reasons, and include detailed metrics or CSV only when the teacher asks for audit/source data.
+
 ```csv
 student_id,student_name,score,band,evidence,penalty_reason,needs_manual_review,workAnswerId
 ```

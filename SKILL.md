@@ -33,6 +33,12 @@ For read-only orientation, use the stable scripts before agent/browser explorati
 
 The discovery script is allowed only for Step 1 orientation. It must not open individual student submissions, export/download materials, draft scores, or write grades.
 
+## Cookie And Session Reality Check
+
+Treat the browser session and the script/API cookie session as separate state. A Chaoxing page opened in the browser may redirect to the login page while the local MozillaCookieJar file still works for scripts and API calls. Do not conclude that the script session is expired from the browser redirect alone; verify with `scripts/check_cookie.py` against the cookie file and report both facts when they disagree.
+
+Use the skill directory as the default working directory and keep the cookie file at the relative path `./cx_cookies.txt`. This relative path is the cross-platform contract for Linux, macOS, and Windows. Run scripts from the skill directory or pass `--cookie-file ./cx_cookies.txt` explicitly. If a previous run saved cookies elsewhere, use the platform's normal file search only to migrate or copy it back into the skill directory; do not make environment-specific absolute paths part of the normal workflow.
+
 ## Non-Negotiable Safety Rule
 
 You may inspect pages, open previews, download/export attachments, parse documents, and draft score suggestions only within the confirmed scoring mode.
@@ -91,6 +97,8 @@ Supporting references:
 
 ## Output Contracts
 
+Teacher-facing score drafts and write confirmations must use concise Chinese Markdown tables, not raw CSV. Keep raw metrics and CSV rows for machine scripts, saved artifacts, or teacher-requested audit details.
+
 Calibration table for `concise` or `detailed` modes:
 
 ```text
@@ -107,6 +115,8 @@ Every score must be inside the teacher-confirmed score range. In `random` mode, 
 
 ## Pitfalls
 
+- Browser login state and script cookie state can disagree; a browser redirect to login does not invalidate a separately stored cookie file by itself.
+- Keep `cx_cookies.txt` in the skill directory as `./cx_cookies.txt`; avoid baking environment-specific absolute paths into commands or reports.
 - Do not download or inspect assignment files before score range and mode are confirmed.
 - Do not use XLS import when unsubmitted rows are present unless they are removed and the exact import plan is confirmed.
 - Do not treat `batch_grade.py` metrics as final grades by themselves.

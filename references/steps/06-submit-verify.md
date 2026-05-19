@@ -37,14 +37,17 @@ Chinese write-preflight template:
 写入计划：
 待写入人数：<student_count_to_write>
 未交人数：<unsubmitted_count>
-仍需人工复核：<manual_review_remaining>
+建议人工复核：<manual_review_remaining>
 
 即将写入的分数：
-student_id,student_name,score,workAnswerId
-<rows>
+| 学号 | 姓名 | 分数 | workAnswerId |
+|---|---|---:|---|
+| <student_id> | <student_name> | <score> | <workAnswerId> |
 
 请明确回复“确认写入以上分数”，我才会提交到超星系统。
 ```
+
+Use the Markdown table above for the teacher-facing confirmation. Keep the CSV file/schema for scripts, but do not paste raw CSV as the default confirmation message unless the teacher explicitly asks for CSV.
 
 ## Dry-Run Individual Submission Helper
 

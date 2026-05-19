@@ -435,7 +435,9 @@ For experiment-report assignments, a useful starting rubric is (see `references/
 - conclusion or reflection quality: 10%
 - format and header completeness: 10%
 
-Use this fixed score-draft schema so another model or the teacher can audit it:
+For teacher-facing messages, use the current Chinese Markdown score table template from `references/steps/05-draft-scores.md`. Do not paste raw CSV or raw metric strings as the default response.
+
+Use this fixed score-draft schema for scripts, saved artifacts, or teacher-requested audit data:
 
 ```csv
 student_id,student_name,score,band,evidence,penalty_reason,needs_manual_review,workAnswerId

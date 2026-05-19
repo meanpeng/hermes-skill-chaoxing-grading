@@ -31,16 +31,20 @@ Use a UTF-8 capable terminal for Chinese output. On Windows PowerShell, Python s
 ## Login
 
 ```bash
-python scripts/chaoxing_login_cookie.py --phone "188xxxx1234" --cookie-file cx_cookies.txt
+python scripts/chaoxing_login_cookie.py --phone "188xxxx1234" --cookie-file ./cx_cookies.txt
 ```
 
 Omit `--password` so the password is typed without echo. The cookie file is local working data and should not be committed.
 
-Check whether a saved cookie is still usable:
+Before logging in again, use the skill directory as the working directory and keep the cookie file at the relative path `./cx_cookies.txt`. This path works from Bash, zsh, and Windows PowerShell when commands are run from the skill directory. If a previous run saved cookies elsewhere, copy or move that file back to `./cx_cookies.txt` instead of continuing with an environment-specific absolute path.
+
+Check whether the skill-local cookie is still usable:
 
 ```bash
-python scripts/check_cookie.py --cookie-file cx_cookies.txt
+python scripts/check_cookie.py --cookie-file ./cx_cookies.txt
 ```
+
+The browser session and script/API session are separate. A browser tab may redirect to the Chaoxing login page while the local MozillaCookieJar file still works for scripts. Treat `scripts/check_cookie.py` as the source of truth for script operations and report the mismatch if browser and script state disagree.
 
 ## Read-Only Discovery
 
@@ -48,7 +52,7 @@ For the orientation phase, prefer the discovery script over manual browser explo
 
 ```bash
 python scripts/chaoxing_discover.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵"
 ```
@@ -59,7 +63,7 @@ If the account has multiple teacher courses and the target course is not known, 
 
 ```bash
 python scripts/chaoxing_discover.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --class-contains "闵"
 ```
 
@@ -88,7 +92,7 @@ After the teacher confirms `concise` or `detailed` scoring, use the dry-run-firs
 
 ```bash
 python scripts/download_work_zips.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵" \
   --assignment-contains "实验五" \
@@ -99,7 +103,7 @@ Add `--confirm-download` only after the target list is correct:
 
 ```bash
 python scripts/download_work_zips.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵" \
   --assignment-contains "实验五" \
@@ -177,7 +181,7 @@ Preferred list-page API path:
 
 ```bash
 python scripts/submit_scores.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --courseid 204565237 \
   --clazzid 139247126 \
   --cpi 492206399 \
@@ -192,7 +196,7 @@ After a confirmed write, verify against the exported grade table:
 
 ```bash
 python scripts/verify_score_export.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --courseid 204565237 \
   --clazzid 139247126 \
   --cpi 492206399 \

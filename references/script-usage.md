@@ -13,28 +13,32 @@ python -m pip install -r requirements.txt
 Use this only when login is needed. Do not print passwords in logs.
 
 ```bash
-python scripts/chaoxing_login_cookie.py --phone "188xxxx1234" --cookie-file cx_cookies.txt
+python scripts/chaoxing_login_cookie.py --phone "188xxxx1234" --cookie-file ./cx_cookies.txt
 ```
 
-Check an existing cookie file before logging in again:
+Before logging in again, use the skill directory as the working directory and keep the cookie file at the relative path `./cx_cookies.txt`. This path works from Bash, zsh, and Windows PowerShell when commands are run from the skill directory. If a previous run saved cookies elsewhere, copy or move that file back to `./cx_cookies.txt` instead of continuing with an environment-specific absolute path.
+
+Check the skill-local cookie file before logging in again:
 
 ```bash
-python scripts/check_cookie.py --cookie-file cx_cookies.txt
+python scripts/check_cookie.py --cookie-file ./cx_cookies.txt
 ```
 
 For JSON:
 
 ```bash
-python scripts/check_cookie.py --cookie-file cx_cookies.txt --json
+python scripts/check_cookie.py --cookie-file ./cx_cookies.txt --json
 ```
 
-Legacy curl fallback:
+Legacy curl fallback for Bash/zsh or real `curl.exe` on Windows:
 
 ```bash
-curl -s -b cx_cookies.txt "https://i.chaoxing.com" -o /dev/null -w "%{http_code}"
+curl -s -b ./cx_cookies.txt "https://i.chaoxing.com" -o /dev/null -w "%{http_code}"
 ```
 
 Treat `200` as likely valid and `302` as expired.
+
+Browser state is not the same as script/API state. If a browser tab redirects to the Chaoxing login page but `check_cookie.py` reports the cookie file is valid, continue script/API operations with the validated `--cookie-file` path and mention the mismatch in the run report.
 
 ## Read-Only Course/Class/Assignment Discovery
 
@@ -42,7 +46,7 @@ Use this after login to avoid model-specific browser exploration for the orienta
 
 ```bash
 python scripts/chaoxing_discover.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵"
 ```
@@ -51,7 +55,7 @@ Use JSON for downstream tooling:
 
 ```bash
 python scripts/chaoxing_discover.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵" \
   --json
@@ -61,7 +65,7 @@ If the account has multiple teacher courses and the target course is not known, 
 
 ```bash
 python scripts/chaoxing_discover.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --class-contains "闵"
 ```
 
@@ -71,7 +75,7 @@ If course selection is already known, skip course-list matching:
 
 ```bash
 python scripts/chaoxing_discover.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --courseid 204565237 \
   --cpi 492206399 \
   --class-contains "闵"
@@ -89,7 +93,7 @@ Use only after the teacher has confirmed `concise` or `detailed` scoring and the
 
 ```bash
 python scripts/download_work_zips.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵" \
   --assignment-contains "实验五" \
@@ -100,7 +104,7 @@ Confirmed download:
 
 ```bash
 python scripts/download_work_zips.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --course "人工智能原理" \
   --class-contains "闵" \
   --assignment-contains "实验五" \
@@ -172,7 +176,7 @@ Preferred list-page API path:
 
 ```bash
 python scripts/submit_scores.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --courseid COURSEID \
   --clazzid CLAZZID \
   --cpi CPI \
@@ -185,7 +189,7 @@ Confirmed write:
 
 ```bash
 python scripts/submit_scores.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --courseid COURSEID \
   --clazzid CLAZZID \
   --cpi CPI \
@@ -201,7 +205,7 @@ After a confirmed write, verify with the list page first, then use the exported 
 
 ```bash
 python scripts/verify_score_export.py \
-  --cookie-file cx_cookies.txt \
+  --cookie-file ./cx_cookies.txt \
   --courseid COURSEID \
   --clazzid CLAZZID \
   --cpi CPI \

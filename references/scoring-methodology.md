@@ -96,6 +96,17 @@ Clamp the returned score to the teacher-confirmed score range before showing the
 
 ## Output Schema
 
+Teacher-facing drafts should use this Chinese Markdown table:
+
+```text
+| 学号 | 姓名 | 分数 | 档位 | 建议复核 | 说明 |
+|---|---|---:|---|---|---|
+```
+
+The `说明` column should summarize evidence in plain Chinese. Do not paste raw metric strings in the main draft unless the teacher asks for source/audit data.
+
+Use this CSV schema for scripts or saved artifacts:
+
 ```csv
 student_id,student_name,score,band,evidence,penalty_reason,needs_manual_review,workAnswerId
 ```
