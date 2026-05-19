@@ -89,7 +89,7 @@ python scripts/submit_scores.py \
   --method list-input
 ```
 
-The script fetches `/mooc2-ans/work/mark-list`, matches `student_id` or `workAnswerId`, validates the exact target rows, and prints the write plan. It does not write unless `--confirm-submit` is passed after teacher confirmation:
+The script fetches `/mooc2-ans/work/mark-list`, matches `student_id` or `workAnswerId`, validates the exact target rows, and prints the write plan. If `workinfo` or discovery says there are more submitted rows than one page can contain, treat the list as paged and collect pages until the fetched submitted row count reaches the expected submitted count. For example, 33 submitted rows means at least two mark-list pages must be considered before deciding rows are missing. Use `--mark-pages N` to force a known page count when the page count is already visible. It does not write unless `--confirm-submit` is passed after teacher confirmation:
 
 ```bash
 python scripts/submit_scores.py \
@@ -104,6 +104,8 @@ python scripts/submit_scores.py \
 ```
 
 Confirmed `list-input` writes call `/mooc2-ans/work/markscore` with one `workAnswerId` at a time. Use only after the write preflight is confirmed.
+
+If the script reports fewer `mark_rows` than the expected submitted count, do not guess that the unmatched students are absent or unsubmitted. Use the paged review-list DOM or exported grade table to fill the missing `workAnswerId` values before writing.
 
 ## XLS Export/Edit/Import
 

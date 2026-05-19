@@ -103,12 +103,17 @@ scoring_mode: random | concise | detailed
 score_range: <min>-<max>
 target course/class/assignment: <values>
 student_count_to_write: <n>
+expected_submitted_count: <n>
+mark_pages_expected: <n|auto>
+mark_rows_collected: <n>
 manual_review_remaining: <n>
 unsubmitted_count: <n>
 teacher_confirmed_exact_score_list: yes/no
 ```
 
 The only valid state for writing is `teacher_confirmed_exact_score_list: yes`.
+
+If `mark_rows_collected` is lower than `expected_submitted_count`, the mark list is incomplete. For counts above 20, assume pagination first and collect additional review-list pages before matching or writing scores.
 
 ## 7. Post-Write Verification
 

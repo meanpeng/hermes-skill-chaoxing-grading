@@ -31,6 +31,12 @@ def parse_args():
     parser.add_argument("--work-id", required=True)
     parser.add_argument("--scores-csv", required=True)
     parser.add_argument("--method", choices=("list-input",), default="list-input")
+    parser.add_argument(
+        "--mark-pages",
+        type=int,
+        default=0,
+        help="Number of mark-list pages to fetch. Defaults to auto from submitted count.",
+    )
     parser.add_argument("--confirm-submit", action="store_true")
     parser.add_argument("--json", action="store_true")
     return parser.parse_args()
@@ -66,8 +72,8 @@ def get_work_info(opener, args):
     return parsed["data"]
 
 
-def get_mark_list(opener, args):
-    data = {
+def mark_list_params(args, page_num):
+    return {
         "courseid": args.courseid,
         "clazzid": args.clazzid,
         "cpi": args.cpi,
@@ -81,8 +87,8 @@ def get_mark_list(opener, args):
         "ceyan": "0",
         "chapterid": "0",
         "workLibraryid": "",
-        "prePageSize": "100",
-        "prePageNum": "1",
+        "prePageSize": "20",
+        "prePageNum": str(max(1, page_num - 1)),
         "noBack": "false",
         "topicid": "0",
         "backurl": "",
@@ -90,10 +96,12 @@ def get_mark_list(opener, args):
         "sort": "0",
         "order": "0",
         "status": "0",
-        "pageNum": "1",
-        "pageSize": "100",
+        "pageNum": str(page_num),
+        "pageSize": "20",
     }
-    html = request(opener, MARK_LIST_URL, data=data)
+
+
+def parse_mark_list_rows(html):
     rows = []
     for chunk in re.findall(r'(<ul class="dataBody_td" id="\d+".*?</ul>)', html, re.S):
         answer_id = first_match(chunk, r'<ul class="dataBody_td" id="(\d+)"')
@@ -113,6 +121,37 @@ def get_mark_list(opener, args):
                 "current_score": score,
             }
         )
+    return rows
+
+
+def get_mark_list(opener, args, expected_count=0):
+    rows = []
+    seen_answer_ids = set()
+    page_size = 20
+    auto_pages = max(1, (expected_count + page_size - 1) // page_size) if expected_count else 1
+    requested_pages = max(0, args.mark_pages or 0)
+    min_pages = max(auto_pages, requested_pages)
+    max_pages = requested_pages or max(min_pages + 1, 20)
+
+    for page_num in range(1, max_pages + 1):
+        html = request(opener, MARK_LIST_URL, data=mark_list_params(args, page_num))
+        page_rows = parse_mark_list_rows(html)
+        new_rows = [
+            row for row in page_rows
+            if row["workAnswerId"] and row["workAnswerId"] not in seen_answer_ids
+        ]
+        for row in new_rows:
+            seen_answer_ids.add(row["workAnswerId"])
+            rows.append(row)
+
+        if expected_count and len(rows) >= expected_count:
+            break
+        if page_num >= min_pages and not new_rows:
+            break
+        if page_num >= min_pages and page_rows and not new_rows:
+            break
+        if not page_rows:
+            break
     return rows
 
 
@@ -241,7 +280,8 @@ def output_result(result, as_json):
     print(f"courseid={result['courseid']} clazzid={result['clazzid']} workId={result['workId']}")
     print(
         f"full_score={result['full_score']:g} submitted={result['submitted']} "
-        f"unsubmitted={result['unsubmitted']} targets={len(result['plan'])}"
+        f"unsubmitted={result['unsubmitted']} mark_pages={result['mark_pages']} "
+        f"mark_rows={result['mark_rows']} targets={len(result['plan'])}"
     )
     if result["errors"]:
         print("Errors:")
@@ -265,9 +305,16 @@ def main():
     args = parse_args()
     opener = chaoxing_discover.make_opener(args.cookie_file)
     info = get_work_info(opener, args)
-    mark_rows = get_mark_list(opener, args)
+    submitted = int(info["submitCount"])
+    unsubmitted = int(info["noSubmitCount"])
+    mark_rows = get_mark_list(opener, args, expected_count=submitted)
     score_rows = load_scores(args.scores_csv)
     plan, errors = build_plan(score_rows, mark_rows, float(info["score"]))
+    if submitted and len(mark_rows) < submitted:
+        errors.append(
+            f"mark-list incomplete: fetched {len(mark_rows)} submitted rows, expected {submitted}; "
+            "collect remaining workAnswerId values from paged review-list DOM or exported grade table before writing"
+        )
     result = {
         "method": args.method,
         "dry_run": not args.confirm_submit,
@@ -276,8 +323,10 @@ def main():
         "cpi": args.cpi,
         "workId": args.work_id,
         "full_score": float(info["score"]),
-        "submitted": int(info["submitCount"]),
-        "unsubmitted": int(info["noSubmitCount"]),
+        "submitted": submitted,
+        "unsubmitted": unsubmitted,
+        "mark_rows": len(mark_rows),
+        "mark_pages": args.mark_pages or "auto",
         "plan": plan,
         "errors": errors,
     }
