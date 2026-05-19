@@ -29,6 +29,7 @@ If a required field is unknown, collect it before moving to the next phase.
 2. Before opening, exporting, downloading, extracting, or parsing assignment files, ask the teacher to confirm:
    - score range
    - scoring mode: `random`, `concise`, or `detailed`
+   When the course/class/assignment context is Chinese, use the Chinese scoring setup template in `references/steps/03-scoring-setup.md` so the teacher supplies both fields explicitly.
 3. If mode is `random`, do not download, open, export, extract, or parse assignment files. Use only the student list/IDs and label evidence as `teacher-selected random scoring; assignment not inspected`.
 4. If mode is `concise`, use metadata and metrics only as rough evidence. Inspect flagged or ambiguous cases.
 5. If mode is `detailed`, inspect every available assignment file before scoring.
