@@ -20,7 +20,7 @@ Chinese prompt template:
 workId：<workId>
 状态：已交 <submitted>，待批 <pending_review>，未交 <unsubmitted>
 
-下一步如果需要打开、导出、下载或解析学生材料，请先确认评分设置。
+下一步如果需要继续评分，请先确认评分设置。
 
 请确认：
 1. 分数范围：例如 70-100、60-95 或 0-100

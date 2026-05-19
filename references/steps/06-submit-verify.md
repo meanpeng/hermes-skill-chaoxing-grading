@@ -19,6 +19,33 @@ teacher_confirmed_exact_score_list: yes/no
 
 The only valid write state is `teacher_confirmed_exact_score_list: yes`.
 
+Chinese write-preflight template:
+
+```text
+提交前确认：
+
+目标：
+课程：<course> | courseid=<courseid>
+班级：<class> | clazzid=<clazzid>
+作业：<assignment> | workId=<workId>
+
+评分设置：
+评分范围：<score_range>
+评分模式：<random|concise|detailed>
+写入方式：<list-input|export-edit-import|individual-submit>
+
+写入计划：
+待写入人数：<student_count_to_write>
+未交人数：<unsubmitted_count>
+仍需人工复核：<manual_review_remaining>
+
+即将写入的分数：
+student_id,student_name,score,workAnswerId
+<rows>
+
+请明确回复“确认写入以上分数”，我才会提交到超星系统。
+```
+
 ## Dry-Run Individual Submission Helper
 
 ```bash
@@ -122,3 +149,17 @@ status_regressions: <unsubmitted/redo/completed anomalies or none>
 ```
 
 Report mismatches before retrying or recovering.
+
+Chinese verification report template:
+
+```text
+写入后验证结果：
+
+验证来源：<mark-list|exported-grade-table|both>
+预期写入：<expected_written>
+已验证写入：<verified_written>
+分数不一致：<mismatches 或 none>
+状态异常：<status_regressions 或 none>
+
+结论：<全部一致|存在不一致，暂不继续修复>
+```

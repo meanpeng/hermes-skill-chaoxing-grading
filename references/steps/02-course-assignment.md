@@ -56,6 +56,18 @@ Array.from(document.querySelectorAll("a"))
 
 If multiple courses match, show the candidate names and ask the teacher to choose.
 
+Chinese prompt template for ambiguous course/class:
+
+```text
+找到多个可能的课程或班级，请确认目标：
+
+1. <course/class candidate 1> | courseid=<id> | clazzid=<id> | cpi=<cpi>
+2. <course/class candidate 2> | courseid=<id> | clazzid=<id> | cpi=<cpi>
+3. <course/class candidate 3> | courseid=<id> | clazzid=<id> | cpi=<cpi>
+
+请回复序号，或直接回复课程名/班级名。
+```
+
 ## Assignment And Class Context
 
 Assignment list URL:
@@ -85,6 +97,18 @@ links = links.map(a => {
 
 If the target assignment is not named, list visible assignment titles/counts and ask the teacher to choose.
 
+Chinese prompt template for ambiguous assignment:
+
+```text
+当前班级下找到多个作业，请确认要批改哪一个：
+
+1. <assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+2. <assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+3. <assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+
+请回复序号，或直接回复作业名称。
+```
+
 ## Review List
 
 Student rows usually expose `workAnswerId` through review links:
@@ -106,3 +130,16 @@ Before scoring, record and show:
 - submitted / pending / missing counts
 
 Chaoxing may show an all-class assignment card, then switch to a specific class on the review list. Re-check the visible class name and counts after entering the review list.
+
+Chinese summary template after orientation:
+
+```text
+已定位到目标作业：
+课程：<course> | courseid=<courseid>
+班级：<class> | clazzid=<clazzid>
+作业：<assignment> | workId=<workId>
+当前页面：<page_url>
+状态：已交 <submitted>，待批 <pending_review>，未交 <unsubmitted>
+
+下一步进入评分设置确认。
+```

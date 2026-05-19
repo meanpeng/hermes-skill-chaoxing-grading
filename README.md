@@ -242,6 +242,7 @@ python scripts/batch_submit_scores.py \
 
 - Before downloading or inspecting assignments, ask the teacher to confirm the score range and scoring mode: random, concise, or detailed.
 - In Chinese course contexts, use `references/steps/03-scoring-setup.md` as the scoring setup prompt template.
+- For ambiguous target selection, calibration, score drafts, write preflight, and verification reports, prefer the Chinese templates in `references/steps/02-course-assignment.md`, `05-draft-scores.md`, and `06-submit-verify.md`.
 - Prefer reading a few representative submissions first and calibrating the rubric with the teacher.
 - Use text length and image count as navigation signals, not as grades.
 - For `.docx`, read both paragraphs and table cells.
