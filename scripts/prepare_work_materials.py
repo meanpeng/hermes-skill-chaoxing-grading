@@ -85,7 +85,7 @@ def write_rows_csv(rows, output_csv, include_metrics):
         "preview",
     ]
     if include_metrics:
-        fieldnames.extend(["section_signal", "reflection_signal"])
+        fieldnames.extend(["section_signal", "key_requirement_signal"])
     with open(output_csv, "w", newline="", encoding="utf-8-sig") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
@@ -147,7 +147,7 @@ def write_agent_report(rows, output_md, include_metrics, title):
         file.write("- status_counts: " + ", ".join(f"{key}={value}" for key, value in status_counts.items()) + "\n\n")
         headers = ["student_id", "student_name", "status", "format", "chars", "images"]
         if include_metrics:
-            headers.extend(["sections", "reflection"])
+            headers.extend(["sections", "key_requirements"])
         headers.append("report_path")
         file.write("| " + " | ".join(headers) + " |\n")
         file.write("| " + " | ".join("---" for _ in headers) + " |\n")
@@ -163,7 +163,7 @@ def write_agent_report(rows, output_md, include_metrics, title):
             if include_metrics:
                 values.extend([
                     f"{row.get('section_signal', '')}/6",
-                    "yes" if row.get("reflection_signal") else "no",
+                    "yes" if row.get("key_requirement_signal") else "no",
                 ])
             values.append(row["report_path"])
             file.write("| " + " | ".join(escape_md(value) for value in values) + " |\n")

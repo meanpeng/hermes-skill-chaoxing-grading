@@ -21,7 +21,7 @@ Use `batch_grade.py` material and metrics output as rough evidence. Inspect flag
 Useful calibration table:
 
 ```text
-student_id | student_name | chars | images | sections | reflection | status | provisional_band | notes
+student_id | student_name | chars | images | sections | key_requirement | status | provisional_band | notes
 ```
 
 Use `references/scoring-methodology.md` for suggested bands and first-pass formula.
@@ -30,13 +30,14 @@ Chinese calibration prompt template:
 
 ```text
 我先抽取了 <sample_count> 份代表性提交用于校准：
+目的：先判断本批作业质量分布，识别指标可能误导的情况，并统一后续全量评分口径。
 
-student_id | student_name | chars | images | sections | reflection | status | provisional_band | notes
+学号 | 姓名 | 字数 | 图片数 | 结构完整度 | 关键要求覆盖 | 读取状态 | 暂定档位 | 备注
 <rows>
 
 请确认评分口径：
 1）宽松作业口径：完成度为主，普通完整作业分数偏高
-2）严格考核口径：更重视完整性、反思质量和证据充分性
+2）严格考核口径：更重视完整性、关键要点和证据充分性
 3）自定义口径：你直接说明扣分重点
 
 确认后我再生成全量分数草稿。

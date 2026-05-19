@@ -25,7 +25,7 @@ SECTION_KEYWORDS = [
     ("environment", ["实验环境", "软件环境", "硬件设备", "依赖库", "Python", "numpy", "matplotlib"]),
     ("process", ["实验步骤", "内容及过程记录", "关键函数", "代码解释", "算法流程", "训练过程"]),
     ("result", ["实验结果", "结果与分析", "运行结果", "可视化", "截图", "输出结果"]),
-    ("summary", ["实验总结", "心得", "体会", "掌握", "认识到", "收获"]),
+    ("summary_or_key_points", ["实验总结", "总结", "心得", "体会", "分析", "关键点", "任务要求", "作业要求", "收获"]),
 ]
 
 
@@ -196,20 +196,12 @@ def optional_metrics(full_text):
         1 for _, keywords in SECTION_KEYWORDS
         if any(keyword in full_text for keyword in keywords)
     )
-    summary_positions = [
-        idx for idx in (
-            full_text.find("实验总结"),
-            full_text.find("总结"),
-            full_text.find("心得"),
-        )
-        if idx >= 0
-    ]
-    summary_text = full_text[min(summary_positions):] if summary_positions else ""
-    has_reflection = any(keyword in summary_text for keyword in [
-        "对比", "分析", "差异", "认识", "理解", "掌握", "发现",
-        "体会", "学到", "提升", "效率", "优缺点", "特点",
+    has_key_requirement = any(keyword in full_text for keyword in [
+        "任务要求", "作业要求", "实验要求", "关键点", "关键步骤",
+        "实现", "代码", "运行", "结果", "截图", "输出", "分析",
+        "总结", "心得", "体会", "收获",
     ])
-    return min(6, section_count), has_reflection
+    return min(6, section_count), has_key_requirement
 
 
 def analyze_student(extract_dir, student_dir_name, include_metrics=False, min_chars=DEFAULT_MIN_CHARS):
@@ -238,10 +230,10 @@ def analyze_student(extract_dir, student_dir_name, include_metrics=False, min_ch
         "preview": preview_text(full_text),
     }
     if include_metrics:
-        section_count, has_reflection = optional_metrics(full_text)
+        section_count, has_key_requirement = optional_metrics(full_text)
         result.update({
             "section_signal": section_count,
-            "reflection_signal": has_reflection,
+            "key_requirement_signal": has_key_requirement,
         })
     return result
 
@@ -298,7 +290,7 @@ def parse_args():
         "--mode",
         choices=("materials", "metrics"),
         default="materials",
-        help="materials only, or metrics with rough section/reflection signals.",
+        help="materials only, or metrics with rough section/key-requirement signals.",
     )
     parser.add_argument(
         "--sample",
@@ -318,18 +310,18 @@ def parse_args():
 def print_rows(rows, include_metrics):
     if include_metrics:
         print("MODE: metrics (rough signals only; still read submissions before grading)")
-        print(f"{'student_id':<12} {'name':<12} {'status':<14} {'fmt':<5} {'chars':>6} {'imgs':>4} {'sec':>5} {'refl':>5}  report")
+        print(f"{'student_id':<12} {'name':<12} {'status':<14} {'fmt':<5} {'chars':>6} {'imgs':>4} {'sec':>5} {'key':>5}  report")
     else:
         print("MODE: materials (organize files only; no automatic grading)")
         print(f"{'student_id':<12} {'name':<12} {'status':<14} {'fmt':<5} {'chars':>6} {'imgs':>4}  report")
     print("-" * 96)
     for row in rows:
         if include_metrics:
-            reflection = "yes" if row["reflection_signal"] else "no"
+            key_requirement = "yes" if row["key_requirement_signal"] else "no"
             print(
                 f"{row['student_id']:<12} {row['student_name']:<12} {row['status']:<14} "
                 f"{row['format']:<5} {row['char_count']:>6} {row['img_count']:>4} "
-                f"{row['section_signal']:>4}/6 {reflection:>5}  {row['report_path']}"
+                f"{row['section_signal']:>4}/6 {key_requirement:>5}  {row['report_path']}"
             )
         else:
             print(
@@ -376,7 +368,7 @@ def main():
             "char_count", "img_count", "expanded_zip", "report_path", "preview",
         ]
         if include_metrics:
-            fieldnames.extend(["section_signal", "reflection_signal"])
+            fieldnames.extend(["section_signal", "key_requirement_signal"])
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(results)

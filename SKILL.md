@@ -102,7 +102,7 @@ Teacher-facing score drafts and write confirmations must use concise Chinese Mar
 Calibration table for `concise` or `detailed` modes:
 
 ```text
-student_id | student_name | chars | images | sections | reflection | status | provisional_band | notes
+student_id | student_name | chars | images | sections | key_requirement | status | provisional_band | notes
 ```
 
 Score draft schema:

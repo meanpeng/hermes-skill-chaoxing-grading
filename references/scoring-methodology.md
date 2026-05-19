@@ -1,4 +1,4 @@
-# Experiment Report Scoring Methodology
+# Assignment Scoring Methodology
 
 This reference turns `batch_grade.py` output into a consistent first-pass score suggestion. It is intentionally conservative: the model must still read or inspect the submission evidence before treating the result as final.
 
@@ -25,14 +25,14 @@ Expected fields from `grading_materials.csv` or `grading_metrics.csv`:
 - `char_count`
 - `img_count`
 - `section_signal`
-- `reflection_signal`
+- `key_requirement_signal`
 - `preview`
 - `report_path`
 
 ## Suggested Bands
 
 ```text
-90-100: complete report, correct assignment, clear process/results, screenshots or code/output evidence, meaningful reflection
+90-100: complete submission, correct assignment, clear process/results, screenshots or code/output evidence, and the assignment's key requirements are covered
 80-89: mostly complete, minor omissions in analysis, screenshots, or conclusion
 70-79: submitted and task-relevant, but important evidence or explanation is missing
 60-69: minimal completion, weak report, incomplete evidence, or hard-to-verify result
@@ -51,7 +51,7 @@ def suggest_score(row, posture="lenient"):
     chars = int(row.get("char_count") or 0)
     images = int(row.get("img_count") or 0)
     sections = int(row.get("section_signal") or 0)
-    reflection = str(row.get("reflection_signal", "")).lower() in {"true", "yes", "1"}
+    key_requirement = str(row.get("key_requirement_signal", "")).lower() in {"true", "yes", "1"}
 
     if status == "missing_report":
         return 55, "manual_review"
@@ -63,10 +63,8 @@ def suggest_score(row, posture="lenient"):
     score += min(10, sections * 2)
     score += min(8, chars // 250)
     score += min(10, images * 2)
-    if reflection:
-        score += 8
-    elif chars >= 300 or images >= 2:
-        score -= 4
+    if key_requirement:
+        score += 6
 
     if status == "too_short" and images == 0:
         score = min(score, 72)
@@ -89,7 +87,7 @@ Clamp the returned score to the teacher-confirmed score range before showing the
 - In `random` mode, do not invent content-based evidence, penalties, or quality claims.
 - Low text with unique screenshots is not automatically low quality.
 - Blank process/result text can be acceptable when screenshots show the work.
-- Missing or weak reflection is a meaningful penalty even if screenshots exist.
+- Do not penalize a missing reflection/summary section unless the assignment explicitly requires it. Use `key_requirement_signal` only as a rough positive signal that key assignment requirements may be covered.
 - Identical or near-identical submissions need group comparison, not isolated scoring.
 - `unreadable` means agent-side direct file inspection is required before teacher-facing review: open alternate report candidates, nested archives/attachments, and available PDF/original-attachment packages with appropriate local tools. Rerunning the material-prep script is not enough. Keep it out of the final manual-review list until direct inspection attempts fail.
 - Any score below 70 for a submitted report needs a written defect in `penalty_reason`.

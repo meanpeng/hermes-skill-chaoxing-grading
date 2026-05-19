@@ -25,7 +25,7 @@ python scripts/prepare_work_materials.py \
 
 The script extracts each zip into its own folder, expands nested student zips, runs material or metric analysis, writes per-assignment CSVs, writes an `agent_material_report.md` for each assignment, and writes `materials_manifest.csv/json`.
 
-This step must not generate draft scores. It only reports extraction status, character count, image count, structure/section signals, reflection signal, and report paths for later agent or teacher judgment.
+This step must not generate draft scores. It only reports extraction status, character count, image count, structure/section signals, key-requirement signal, and report paths for later agent or teacher judgment.
 
 Manual equivalent:
 
@@ -51,7 +51,7 @@ Treat these fields as reading aids, not automatic grades:
 - `report_path`
 - `preview`
 - `section_signal`
-- `reflection_signal`
+- `key_requirement_signal`
 
 ## Agent-Side Unreadable Confirmation
 

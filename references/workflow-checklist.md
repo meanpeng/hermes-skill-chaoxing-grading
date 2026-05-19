@@ -32,7 +32,7 @@ setup_confirmed_by_teacher: yes/no
 Allowed modes:
 
 - `random`: random scoring inside the confirmed range. Do not download, open, or inspect assignment files. Evidence must say assignment content was not inspected.
-- `concise`: rough scoring from metadata such as text length, section/reflection signals, image count, and previews.
+- `concise`: rough scoring from metadata such as text length, section/key-requirement signals, image count, and previews.
 - `detailed`: open every student's assignment file and inspect actual content before scoring.
 
 If `setup_confirmed_by_teacher` is not `yes`, do not continue.
@@ -55,10 +55,12 @@ Metrics are reading aids. They are not grades.
 
 Use this only for `concise` or `detailed` mode. Skip submission-based calibration for `random` mode.
 
+Purpose: use the sample to calibrate the grading posture before full drafting. The sample should help estimate the assignment quality distribution, catch cases where metrics are misleading, align lenient/strict/custom teacher expectations, and keep later full-batch scoring consistent. Do not treat sample rows as final scores until the full draft is produced and reviewed.
+
 Show 3-5 representative submissions:
 
 ```text
-student_id | student_name | chars | images | sections | reflection | status | provisional_band | notes
+student_id | student_name | chars | images | sections | key_requirement | status | provisional_band | notes
 ```
 
 Ask the teacher to accept or adjust one grading posture:

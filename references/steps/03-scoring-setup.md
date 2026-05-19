@@ -7,7 +7,7 @@ Ask the teacher to confirm in Chinese when the current course/class/assignment c
 1. Score range, for example `70-100`, `60-95`, or `0-100`.
 2. Scoring mode:
    - `1. random`: random scoring inside the confirmed score range. Do not download or inspect assignment files.
-   - `2. concise`: rough scoring from metadata such as parsed text length, section signals, reflection signals, image counts, and previews.
+   - `2. concise`: rough scoring from metadata such as parsed text length, section signals, key-requirement signals, image counts, and previews.
    - `3. detailed`: open and inspect every student's assignment file before assigning scores.
 
 Chinese prompt template:
