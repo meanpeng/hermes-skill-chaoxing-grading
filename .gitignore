@@ -49,3 +49,7 @@ Thumbs.db
 *.docx
 *.doc
 *.pdf
+
+# 本地抓取/批改材料（含学生信息）
+work/
+prepared-*/

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only Chaoxing course/class/assignment discovery from saved cookies."""
+"""Read-only Chaoxing course/class/assignment/exam discovery from saved cookies."""
 
 import argparse
 import http.cookiejar
@@ -14,6 +14,7 @@ from html import unescape
 COURSE_LIST_URL = "https://mooc2-ans.chaoxing.com/mooc2-ans/visit/courselistdata"
 COURSE_ENTRY_URL = "https://mooc1.chaoxing.com/course/isNewCourse"
 WORK_LIST_URL = "https://mooc2-ans.chaoxing.com/mooc2-ans/work/list"
+EXAM_LIST_URL = "https://mooc2-ans.chaoxing.com/mooc2-ans/exam/test"
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -21,7 +22,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Discover teacher courses, classes, and assignments.")
+    parser = argparse.ArgumentParser(description="Discover teacher courses, classes, assignments, and exams.")
     parser.add_argument("--cookie-file", default="cx_cookies.txt", help="MozillaCookieJar cookie file.")
     parser.add_argument("--course", help="Course name keyword or exact course name.")
     parser.add_argument("--class-contains", default="", help="Only include classes whose name contains this text.")
@@ -131,6 +132,37 @@ def parse_assignments(html):
     return assignments
 
 
+def parse_exams(html):
+    exams = []
+    chunks = re.findall(r'(<li\s+data="\d+".*?</li>)', html, re.S)
+    for chunk in chunks:
+        relationid = first_match(chunk, r'<li\s+data="(\d+)"')
+        paper_id = first_match(chunk, r'<div class="list_li_content[^"]*"[^>]*data="(\d+)"')
+        title = clean(first_match(chunk, r'<h2[^>]*>(.*?)</h2>'))
+        class_name = clean(first_match(chunk, r'<div class="list_class[^"]*"[^>]*title="([^"]*)"'))
+        pending = first_match(chunk, r'<em[^>]*[^>]*>\s*(\d+)\s*</em>\s*待批')
+        submitted = first_match(chunk, r'<span>\s*(\d+)\s*已交</span>')
+        unsubmitted = first_match(chunk, r'<span>\s*(\d+)\s*未交</span>')
+        mark_url = unescape(first_match(chunk, r'href="([^"]*/mooc2-ans/exam/test/marklist[^"]+)"'))
+        if mark_url.startswith("/"):
+            mark_url = "https://mooc2-ans.chaoxing.com" + mark_url
+        if not title and not relationid:
+            continue
+        exams.append(
+            {
+                "exam": title,
+                "relationid": relationid,
+                "paperId": paper_id,
+                "class": class_name,
+                "pending_review": int(pending or 0),
+                "submitted": int(submitted or 0),
+                "unsubmitted": int(unsubmitted or 0),
+                "mark_url": mark_url,
+            }
+        )
+    return exams
+
+
 def discover_work_for_class(opener, courseid, base_clazzid, cpi, clazzid):
     params = {
         "courseid": courseid,
@@ -146,6 +178,23 @@ def discover_work_for_class(opener, courseid, base_clazzid, cpi, clazzid):
     url = f"{WORK_LIST_URL}?{urllib.parse.urlencode(params)}"
     html, final_url = fetch(opener, url)
     return html, final_url
+
+
+def discover_exam_for_class(opener, courseid, clazzid, cpi):
+    params = {
+        "courseid": courseid,
+        "clazzid": clazzid,
+        "cpi": cpi,
+    }
+    url = f"{EXAM_LIST_URL}?{urllib.parse.urlencode(params)}"
+    html, final_url = fetch(opener, url)
+    return html, final_url
+
+
+def find_task_name_conflicts(assignments, exams):
+    assignment_names = {item["assignment"] for item in assignments if item.get("assignment")}
+    exam_names = {item["exam"] for item in exams if item.get("exam")}
+    return sorted(assignment_names & exam_names)
 
 
 def select_course(courses, requested):
@@ -183,6 +232,10 @@ def discover_course_detail(opener, course, class_contains, base_clazzid=None):
         html, url = discover_work_for_class(opener, course["courseid"], base_clazzid, course["cpi"], cls["clazzid"])
         cls["page_url"] = url
         cls["assignments"] = parse_assignments(html)
+        exam_html, exam_url = discover_exam_for_class(opener, course["courseid"], cls["clazzid"], course["cpi"])
+        cls["exam_page_url"] = exam_url
+        cls["exams"] = parse_exams(exam_html)
+        cls["task_name_conflicts"] = find_task_name_conflicts(cls["assignments"], cls["exams"])
 
     return {
         "course": course["course"],
@@ -245,13 +298,25 @@ def print_table(result):
     print(f"course: {result['course']} | courseid={result['courseid']} | cpi={result['cpi']}")
     print(f"base_clazzid: {result['base_clazzid']}")
     for cls in result["classes"]:
-        print(f"\nclass: {cls['class']} | clazzid={cls['clazzid']} | assignments={len(cls['assignments'])}")
+        print(
+            f"\nclass: {cls['class']} | clazzid={cls['clazzid']} | "
+            f"assignments={len(cls['assignments'])} | exams={len(cls.get('exams', []))}"
+        )
         print("workId\tpending\tsubmitted\tunsubmitted\tassignment")
         for item in cls["assignments"]:
             print(
                 f"{item['workId']}\t{item['pending_review']}\t{item['submitted']}\t"
                 f"{item['unsubmitted']}\t{item['assignment']}"
             )
+        if cls.get("exams"):
+            print("relationid\tpaperId\tpending\tsubmitted\tunsubmitted\texam")
+            for item in cls["exams"]:
+                print(
+                    f"{item['relationid']}\t{item['paperId']}\t{item['pending_review']}\t"
+                    f"{item['submitted']}\t{item['unsubmitted']}\t{item['exam']}"
+                )
+        if cls.get("task_name_conflicts"):
+            print("ambiguous_task_names: " + ", ".join(cls["task_name_conflicts"]))
 
 
 def main():

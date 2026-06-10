@@ -40,7 +40,7 @@ Treat `200` as likely valid and `302` as expired.
 
 Browser state is not the same as script/API state. If a browser tab redirects to the Chaoxing login page but `check_cookie.py` reports the cookie file is valid, continue script/API operations with the validated `--cookie-file` path and mention the mismatch in the run report.
 
-## Read-Only Course/Class/Assignment Discovery
+## Read-Only Course/Class/Assignment/Exam Discovery
 
 Use this after login to avoid model-specific browser exploration for the orientation phase:
 
@@ -81,7 +81,9 @@ python scripts/chaoxing_discover.py \
   --class-contains "闵"
 ```
 
-This script is read-only orientation. It reports assignments and counts; it does not open student submissions, export files, draft grades, or submit anything.
+This script is read-only orientation. It reports assignments, exams, counts, and same-name assignment/exam conflicts; it does not open student submissions, export files, draft grades, or submit anything.
+
+When a requested task name appears in both `assignments` and `exams`, ask the teacher to choose the task type before continuing.
 
 ## Extract Downloaded Assignment Zip
 
@@ -144,6 +146,19 @@ This script must not generate draft scores. It only prepares extraction/statisti
 python scripts/extract_work_zip.py output.zip -d output_dir
 ```
 
+## Prepare Exported Exam Word Records
+
+Use only for confirmed exam `detailed` mode. Exams do not use `random` or `concise` scoring. Download the complete Word answer record package from the exam mark list; do not rely on the attachment-only package for full-class grading.
+
+```bash
+python scripts/prepare_exam_materials.py \
+  --input-dir downloads/exam-word-extract \
+  --output-dir prepared-exam/exam-title \
+  --json
+```
+
+This writes `exam_materials.csv/json`, per-student Markdown reports, and embedded answer images. It prepares evidence only; it does not draft or submit scores.
+
 ## Prepare Material Metadata
 
 Use only for `concise` or `detailed` mode.
@@ -166,6 +181,18 @@ python scripts/batch_submit_scores.py \
   --clazzid CLAZZID \
   --work-id WORK_ID \
   --scores-csv scores.csv
+```
+
+For exams, validate a reviewed total-score CSV against the exam mark list:
+
+```bash
+python scripts/submit_exam_scores.py \
+  --cookie-file ./cx_cookies.txt \
+  --courseid COURSEID \
+  --clazzid CLAZZID \
+  --cpi CPI \
+  --relationid EXAM_RELATION_ID \
+  --scores-csv reviewed_exam_scores.csv
 ```
 
 ## Confirmed Submit Mode
@@ -196,6 +223,19 @@ python scripts/submit_scores.py \
   --work-id WORK_ID \
   --scores-csv final_scores.csv \
   --method list-input \
+  --confirm-submit
+```
+
+Confirmed exam write, only after the teacher confirms the exact reviewed score list:
+
+```bash
+python scripts/submit_exam_scores.py \
+  --cookie-file ./cx_cookies.txt \
+  --courseid COURSEID \
+  --clazzid CLAZZID \
+  --cpi CPI \
+  --relationid EXAM_RELATION_ID \
+  --scores-csv reviewed_exam_scores.csv \
   --confirm-submit
 ```
 

@@ -13,7 +13,8 @@ Maintain this ledger during every run:
 ```text
 course: <name> | courseid=<id>
 class: <name> | clazzid=<id>
-assignment: <title> | workId=<id>
+task: assignment <title> | workId=<id>
+task: exam <title> | relationid=<id> | paperId=<id>
 counts: submitted=<n> pending_review=<n> unsubmitted=<n>
 score_range: <min>-<max> | confirmed=<yes/no>
 scoring_mode: random | concise | detailed | confirmed=<yes/no>
@@ -25,7 +26,8 @@ If a required field is unknown, collect it before moving to the next phase.
 
 ## Gates
 
-1. Identify the target course, class, assignment, and counts.
+1. Identify the target course, class, task type, task title, and counts. When listing class tasks, list both assignments and exams.
+   - If a teacher-provided task name matches both an assignment and an exam, ask the teacher to choose the task type before continuing.
 2. Before opening, exporting, downloading, extracting, or parsing assignment files, ask the teacher to confirm:
    - score range
    - scoring mode: `random`, `concise`, or `detailed`
@@ -35,6 +37,7 @@ If a required field is unknown, collect it before moving to the next phase.
    - `unreadable` is an agent action item, not a teacher action item. Before listing it as needing teacher review, the agent must personally inspect the student's local files and available alternatives: open another report candidate in the student's folder, inspect nested archives/attachments, examine the file with an appropriate reader or extractor, and use a downloaded PDF/original-attachment package if available or safely obtainable under the confirmed mode.
    - Do not treat rerunning the material-prep script as the confirmation step. Scripts may locate files, but the confirmation is the agent's direct inspection of the candidate files. Only mark an `unreadable` submission for teacher review after direct inspection attempts fail, and report which files/alternatives were inspected.
 5. If mode is `detailed`, inspect every available assignment file before scoring.
+   - For exams, `detailed` is the only allowed mode. Do not use `random` or `concise` scoring for exams. Export the complete Word answer record and inspect every submitted student's subjective answers before drafting totals.
 6. Before writing scores, show the exact score list, target course/class/assignment, write method, unsubmitted count, and remaining manual-review count.
 7. Write only after the teacher explicitly confirms that exact final write plan in the current turn.
 8. After writing, verify by re-opening the list and downloading the exported grade table. Treat the exported grade table as the final independent verification source when it is available.

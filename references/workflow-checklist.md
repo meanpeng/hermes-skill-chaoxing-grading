@@ -9,7 +9,9 @@ Fill this before exporting, grading, or submitting:
 ```text
 course: <name> | courseid=<id>
 class: <name> | clazzid=<id>
+task_type: assignment | exam
 assignment: <title> | workId=<id>
+exam: <title> | relationid=<id> | paperId=<id>
 page_url: <url>
 submitted: <n>
 pending_review: <n>
@@ -17,7 +19,7 @@ unsubmitted: <n>
 cookie_checked: yes/no
 ```
 
-If the class, assignment, or counts are uncertain, stop and collect them.
+If the class, task type, task title, or counts are uncertain, stop and collect them. Class listings must include both assignments and exams. If the same task name appears as both an assignment and an exam, ask which type to use before continuing.
 
 ## 2. Scoring Setup Gate
 
@@ -34,6 +36,8 @@ Allowed modes:
 - `random`: random scoring inside the confirmed range. Do not download, open, or inspect assignment files. Evidence must say assignment content was not inspected.
 - `concise`: rough scoring from metadata such as text length, section/key-requirement signals, image count, and previews.
 - `detailed`: open every student's assignment file and inspect actual content before scoring.
+
+For exams, only `detailed` is allowed. Export the complete Word answer record, not only attachments, and inspect every submitted student's subjective answers.
 
 If `setup_confirmed_by_teacher` is not `yes`, do not continue.
 
@@ -104,6 +108,7 @@ method: list-input | export-edit-import | individual-submit
 scoring_mode: random | concise | detailed
 score_range: <min>-<max>
 target course/class/assignment: <values>
+target exam/relationid when task_type=exam: <values>
 student_count_to_write: <n>
 expected_submitted_count: <n>
 mark_pages_expected: <n|auto>

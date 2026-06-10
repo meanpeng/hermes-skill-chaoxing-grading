@@ -1,4 +1,4 @@
-# Step 02: Course, Class, Assignment
+# Step 02: Course, Class, Task
 
 Read `references/agent-rules.md` first. This step is read-only discovery.
 
@@ -33,7 +33,7 @@ python scripts/chaoxing_discover.py \
 
 If neither `--course` nor `--class-contains` is provided and multiple courses exist, the script lists the course choices instead of stopping with an ambiguous-course error.
 
-The script reports course id, `cpi`, base `clazzid`, matching class ids, assignment titles, `workId`, submitted count, pending-review count, unsubmitted count, and review-list URL. It does not open student submissions or download/export work.
+The script reports course id, `cpi`, base `clazzid`, matching class ids, assignment titles with `workId`, exam titles with `relationid`/`paperId`, submitted count, pending-review count, unsubmitted count, and review-list URL. It does not open student submissions or download/export work.
 
 Use the manual DOM route below only when the script fails, the page structure changes, or the teacher needs a page-specific detail not emitted by the script.
 
@@ -68,7 +68,7 @@ Chinese prompt template for ambiguous course/class:
 请回复序号，或直接回复课程名/班级名。
 ```
 
-## Assignment And Class Context
+## Task And Class Context
 
 Assignment list URL:
 
@@ -95,18 +95,29 @@ links = links.map(a => {
 }).filter(x => x.text || x.data || x.href);
 ```
 
-If the target assignment is not named, list visible assignment titles/counts and ask the teacher to choose.
+If the target task is not named, list visible assignment and exam titles/counts and ask the teacher to choose.
 
-Chinese prompt template for ambiguous assignment:
+Chinese prompt template for ambiguous task:
 
 ```text
-当前班级下找到多个作业，请确认要批改哪一个：
+当前班级下找到多个可批改任务，请确认要批改哪一个：
 
-1. <assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
-2. <assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
-3. <assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+1. 作业：<assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+2. 考试：<exam title> | relationid=<relationid> | paperId=<paperId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+3. 作业：<assignment title> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
 
-请回复序号，或直接回复作业名称。
+请回复序号，或直接回复任务名称和类型。
+```
+
+If a teacher-provided name matches both an assignment and an exam, do not choose by default. Ask the teacher to disambiguate:
+
+```text
+“<name>”同时匹配到作业和考试，请确认要批改哪一个：
+
+1. 作业：<name> | workId=<workId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+2. 考试：<name> | relationid=<relationid> | paperId=<paperId> | 已交 <submitted> | 待批 <pending_review> | 未交 <unsubmitted>
+
+请回复“作业”或“考试”，也可以回复序号。
 ```
 
 ## Review List
@@ -126,7 +137,7 @@ Before scoring, record and show:
 
 - course name and `courseid`
 - visible class name and `clazzid`
-- assignment title and `workId`
+- task type and assignment `workId` or exam `relationid`/`paperId`
 - submitted / pending / missing counts
 
 Chaoxing may show an all-class assignment card, then switch to a specific class on the review list. Re-check the visible class name and counts after entering the review list.
@@ -134,10 +145,10 @@ Chaoxing may show an all-class assignment card, then switch to a specific class 
 Chinese summary template after orientation:
 
 ```text
-已定位到目标作业：
+已定位到目标任务：
 课程：<course> | courseid=<courseid>
 班级：<class> | clazzid=<clazzid>
-作业：<assignment> | workId=<workId>
+任务：<作业/考试> | <assignment/workId 或 exam/relationid/paperId>
 当前页面：<page_url>
 状态：已交 <submitted>，待批 <pending_review>，未交 <unsubmitted>
 

@@ -1,6 +1,6 @@
 ---
 name: chaoxing-assignment-grading
-description: "Use when grading Chaoxing/Xuexitong assignments. Teacher workflow: identify course/class/assignment, confirm scoring setup, optionally inspect/export materials, draft scores, and submit only after explicit confirmation."
+description: "Use when grading Chaoxing/Xuexitong assignments or exams. Teacher workflow: identify course/class/task, confirm scoring setup, optionally inspect/export materials, draft scores, and submit only after explicit confirmation."
 version: 2.0.0
 license: MIT
 platforms: [linux, macos, windows]
@@ -10,9 +10,9 @@ metadata:
     related_skills: [browser-harness]
 ---
 
-# Chaoxing Assignment Grading
+# Chaoxing Assignment And Exam Grading
 
-Use this skill for teacher-side Chaoxing/Xuexitong assignment grading workflows.
+Use this skill for teacher-side Chaoxing/Xuexitong assignment and exam grading workflows.
 
 ## Mandatory Rule Loading
 
@@ -28,7 +28,7 @@ For read-only orientation, use the stable scripts before agent/browser explorati
 
 1. Check saved cookies with `scripts/check_cookie.py`.
 2. If needed, log in with `scripts/chaoxing_login_cookie.py`.
-3. Discover teacher courses, matching classes, assignments, and counts with `scripts/chaoxing_discover.py`.
+3. Discover teacher courses, matching classes, assignments, exams, and counts with `scripts/chaoxing_discover.py`.
 4. Use browser DOM exploration only when the discovery script fails or the page structure has changed. If a fallback is needed, report the failure and the fallback evidence.
 
 The discovery script is allowed only for Step 1 orientation. It must not open individual student submissions, export/download materials, draft scores, or write grades.
@@ -45,12 +45,14 @@ You may inspect pages, open previews, download/export attachments, parse documen
 
 Before changing grades, comments, plagiarism markers, return status, or clicking `提交`, `提交并进入下一份`, `完成`, or `打回重做`, show the exact planned action and wait for explicit teacher confirmation in the current turn.
 
+Exam-specific constraint: exams do not support `random` or `concise` scoring in this skill. For exams, use `detailed` only, export the complete Word answer record, inspect every submitted student's subjective answers, and submit only a reviewed total score plan.
+
 ## State Machine
 
 Keep every run in this explicit order:
 
-1. **Orient**: identify the course, class, assignment, submitted count, unsubmitted count, and current page URL.
-2. **Confirm scoring setup**: before opening submissions, exporting, packaging, downloading, extracting, or parsing assignment files, ask the teacher to confirm score range and scoring mode.
+1. **Orient**: identify the course, class, task type, assignment/exam title, submitted count, unsubmitted count, and current page URL. When listing a class, show assignments and exams together. If a provided task name matches both an assignment and an exam, ask the teacher which type to use.
+2. **Confirm scoring setup**: before opening submissions, exporting, packaging, downloading, extracting, or parsing files, ask the teacher to confirm score range and scoring mode.
 3. **Prepare evidence according to mode**:
    - `random`: do not open, export, download, extract, parse, or inspect assignment files.
    - `concise`: use exported metadata and metrics as rough evidence; inspect flagged cases only.
@@ -65,7 +67,8 @@ Required ledger:
 ```text
 course: <name> | courseid=<id>
 class: <name> | clazzid=<id>
-assignment: <title> | workId=<id>
+task: assignment <title> | workId=<id>
+task: exam <title> | relationid=<id> | paperId=<id>
 counts: submitted=<n> pending_review=<n> unsubmitted=<n>
 score_range: <min>-<max> | confirmed=<yes/no>
 scoring_mode: random | concise | detailed | confirmed=<yes/no>
@@ -79,7 +82,7 @@ write_allowed: no until explicit teacher confirmation
 Read only the guide for the current phase:
 
 - `references/steps/01-login.md`: login, cookie checks, and cookie injection.
-- `references/steps/02-course-assignment.md`: course, class, assignment, and review-list discovery.
+- `references/steps/02-course-assignment.md`: course, class, assignment/exam, and review-list discovery.
 - `references/steps/03-scoring-setup.md`: score range and scoring mode confirmation.
 - `references/steps/04-materials.md`: export, download, extract, and material metadata preparation.
 - `references/steps/05-draft-scores.md`: random, concise, and detailed score drafting.
@@ -94,6 +97,17 @@ Supporting references:
 - `references/browser-harness-fallback.md`: Browser harness fallback map when a script fails or page/API structure changes.
 - `references/playwright-submit-fallback.md`: fallback submission approach.
 - `references/full-workflow-legacy.md`: archived long workflow with older page/API details.
+
+## Exam Notes
+
+The exam page is reachable from the course navigation item under the assignment button (`/mooc2-ans/exam/test`). In the mark list, use the complete Word answer record export rather than attachment-only export. Attachment-only zips include only students who uploaded files and are not sufficient for grading all submitted exams.
+
+For the Word answer record package, use:
+
+- `scripts/prepare_exam_materials.py`: parse flat Chaoxing exam Word/HTML `.doc` exports, extract subjective answers and embedded answer images, and write per-student Markdown plus CSV/JSON.
+- `scripts/submit_exam_scores.py`: dry-run-first total score writer for exam mark lists, using `/mooc2-ans/exam/test/batch-markscore` with `way=singlesum`.
+
+Exam score drafts should preserve the objective score exported by Chaoxing and add reviewed subjective scores. Do not generate random or rough exam scores.
 
 ## Output Contracts
 
