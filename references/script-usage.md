@@ -150,6 +150,32 @@ python scripts/extract_work_zip.py output.zip -d output_dir
 
 Use only for confirmed exam `detailed` mode. Exams do not use `random` or `concise` scoring. Download the complete Word answer record package from the exam mark list; do not rely on the attachment-only package for full-class grading.
 
+Prefer the script/API path before browser fallback. Dry-run first:
+
+```bash
+python scripts/download_exam_zips.py \
+  --cookie-file ./cx_cookies.txt \
+  --course "人工智能原理" \
+  --class-contains "闵" \
+  --exam-contains "阶段性测验1" \
+  --format word
+```
+
+Confirmed download:
+
+```bash
+python scripts/download_exam_zips.py \
+  --cookie-file ./cx_cookies.txt \
+  --course "人工智能原理" \
+  --class-contains "闵" \
+  --exam-contains "阶段性测验1" \
+  --format word \
+  --output-dir downloads/ai-principles-exams \
+  --confirm-download
+```
+
+Formats: `word` for the complete answer record package, `attachment` for uploaded attachments only. Use repeated `--relationid` options to target exact exams.
+
 ```bash
 python scripts/prepare_exam_materials.py \
   --input-dir downloads/exam-word-extract \

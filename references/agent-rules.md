@@ -38,6 +38,7 @@ If a required field is unknown, collect it before moving to the next phase.
    - Do not treat rerunning the material-prep script as the confirmation step. Scripts may locate files, but the confirmation is the agent's direct inspection of the candidate files. Only mark an `unreadable` submission for teacher review after direct inspection attempts fail, and report which files/alternatives were inspected.
 5. If mode is `detailed`, inspect every available assignment file before scoring.
    - For exams, `detailed` is the only allowed mode. Do not use `random` or `concise` scoring for exams. Export the complete Word answer record and inspect every submitted student's subjective answers before drafting totals.
+   - For both assignments and exams, use the script/API download path first. Browser export/download is fallback only after the relevant script fails or the page/API structure changes.
 6. Before writing scores, show the exact score list, target course/class/assignment, write method, unsubmitted count, and remaining manual-review count.
 7. Write only after the teacher explicitly confirms that exact final write plan in the current turn.
 8. After writing, verify by re-opening the list and downloading the exported grade table. Treat the exported grade table as the final independent verification source when it is available.

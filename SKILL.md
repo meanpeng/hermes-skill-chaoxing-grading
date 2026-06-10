@@ -104,6 +104,7 @@ The exam page is reachable from the course navigation item under the assignment 
 
 For the Word answer record package, use:
 
+- `scripts/download_exam_zips.py`: dry-run-first package/downloader for exam Word answer records or attachment packages. Prefer this script before browser fallback.
 - `scripts/prepare_exam_materials.py`: parse flat Chaoxing exam Word/HTML `.doc` exports, extract subjective answers and embedded answer images, and write per-student Markdown plus CSV/JSON.
 - `scripts/submit_exam_scores.py`: dry-run-first total score writer for exam mark lists, using `/mooc2-ans/exam/test/batch-markscore` with `way=singlesum`.
 

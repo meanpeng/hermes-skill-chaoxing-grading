@@ -61,9 +61,9 @@ Install Python dependencies from `requirements.txt` before using the local scrip
 
 ## Exam Workflow Notes
 
-The exam list lives under the course exam navigation (`/mooc2-ans/exam/test`). For submitted exams, export the complete Word answer record package. The attachment-only package can miss students because it contains only uploaded files.
+The exam list lives under the course exam navigation (`/mooc2-ans/exam/test`). For submitted exams, export the complete Word answer record package with `scripts/download_exam_zips.py`. The attachment-only package can miss students because it contains only uploaded files.
 
-Use `scripts/prepare_exam_materials.py` to parse the exported Word/HTML `.doc` files and embedded answer images. Use `scripts/submit_exam_scores.py` for dry-run-first total score submission after the teacher confirms the exact reviewed score list.
+Use `scripts/prepare_exam_materials.py` to parse the exported Word/HTML `.doc` files and embedded answer images. Use `scripts/submit_exam_scores.py` for dry-run-first total score submission after the teacher confirms the exact reviewed score list. Browser downloading is a fallback only when the script/API path fails.
 
 ## Important References
 
@@ -83,6 +83,7 @@ Use `scripts/prepare_exam_materials.py` to parse the exported Word/HTML `.doc` f
 - `scripts/chaoxing_login_cookie.py`: login and save cookies
 - `scripts/chaoxing_discover.py`: read-only course/class/assignment/exam discovery
 - `scripts/download_work_zips.py`: dry-run-first package downloader
+- `scripts/download_exam_zips.py`: dry-run-first exam package downloader
 - `scripts/prepare_work_materials.py`: extract zips and prepare material reports
 - `scripts/prepare_exam_materials.py`: parse exported exam Word answer records
 - `scripts/extract_work_zip.py`: safe zip extractor
