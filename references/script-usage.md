@@ -176,6 +176,8 @@ python scripts/download_exam_zips.py \
 
 Formats: `word` for the complete answer record package, `attachment` for uploaded attachments only. Use repeated `--relationid` options to target exact exams.
 
+If the download-center record is still `导出中`, wait or rerun the same script with a longer `--timeout`; do not switch to browser fallback merely because the package is still being generated.
+
 ```bash
 python scripts/prepare_exam_materials.py \
   --input-dir downloads/exam-word-extract \

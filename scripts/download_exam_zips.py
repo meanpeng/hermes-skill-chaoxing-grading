@@ -238,6 +238,9 @@ def clean(text):
 def find_download_entry(entries, target, package_format):
     label = FORMAT_PARAMS[package_format]["label"]
     for entry in entries:
+        if not is_ready_download_entry(entry):
+            continue
+        has_exam_identity = bool(entry.get("clazzid") or entry.get("relationid") or entry.get("paperId"))
         if entry.get("clazzid") and entry.get("clazzid") != str(target["clazzid"]):
             continue
         if entry.get("relationid") and entry.get("relationid") != str(target["relationid"]):
@@ -246,10 +249,28 @@ def find_download_entry(entries, target, package_format):
             continue
         if entry.get("href") and entry.get("format") != label:
             continue
-        if not entry.get("href") and f"({label})" not in entry.get("title", ""):
+        title = entry.get("title", "")
+        if not entry.get("href") and f"({label})" not in title:
+            continue
+        if not has_exam_identity and not title_matches_target(title, target, label):
             continue
         return entry
     return None
+
+
+def is_ready_download_entry(entry):
+    status = entry.get("status", "")
+    if status and "成功" not in status:
+        return False
+    return bool(entry.get("href") or (entry.get("check_safe") and entry.get("recordId")))
+
+
+def title_matches_target(title, target, label):
+    return (
+        f"({label})" in title
+        and str(target.get("class", "")) in title
+        and str(target.get("exam", "")) in title
+    )
 
 
 def safe_filename(name):
