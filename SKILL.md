@@ -1,6 +1,6 @@
 ---
 name: chaoxing-assignment-grading
-description: "Use when grading Chaoxing/Xuexitong assignments or exams. Teacher workflow: identify course/class/task, confirm scoring setup, optionally inspect/export materials, draft scores, and submit only after explicit confirmation."
+description: "Use when grading Chaoxing/Xuexitong assignments or exams, or when exporting final-grade aggregate data (homework, exam, attendance) for a class. Teacher workflow: identify course/class/task, confirm scoring setup, optionally inspect/export materials, draft scores, submit only after explicit confirmation; for term-end aggregation, use the final-grade export script."
 version: 2.0.0
 license: MIT
 platforms: [linux, macos, windows]
@@ -109,6 +109,20 @@ For the Word answer record package, use:
 - `scripts/submit_exam_scores.py`: dry-run-first total score writer for exam mark lists, using `/mooc2-ans/exam/test/batch-markscore` with `way=singlesum`.
 
 Exam score drafts should preserve the objective score exported by Chaoxing and add reviewed subjective scores. Do not generate random or rough exam scores.
+
+## Final Grade Data Export
+
+To aggregate end-of-term grades, use `scripts/export_final_grade_data.py` to download a single Excel file containing homework, exam, and attendance sheets for a class. This wraps the 学情统计 one-click export and is read-only.
+
+```bash
+.venv/Scripts/python.exe scripts/export_final_grade_data.py \
+  --courseid 204565237 \
+  --clazzid 139247042 \
+  --cpi 492206399 \
+  --output all.xlsx
+```
+
+See `references/final-grade-export.md` for API details and `seltables` mapping.
 
 ## Output Contracts
 
