@@ -1,6 +1,6 @@
 ---
 name: chaoxing-assignment-grading
-description: "Use when grading Chaoxing/Xuexitong assignments or exams, or when exporting final-grade aggregate data (homework, exam, attendance) for a class. Teacher workflow: identify course/class/task, confirm scoring setup, optionally inspect/export materials, draft scores, submit only after explicit confirmation; for term-end aggregation, use the final-grade export script."
+description: "Use when grading Chaoxing/Xuexitong assignments or exams. Teacher workflow: identify course/class/task, confirm scoring setup, optionally inspect/export materials, draft scores, and submit only after explicit confirmation."
 version: 2.0.0
 license: MIT
 platforms: [linux, macos, windows]
@@ -92,11 +92,17 @@ Supporting references:
 
 - `references/agent-rules.md`: mandatory short rules.
 - `references/workflow-checklist.md`: run checklist.
-- `references/scoring-methodology.md`: scoring bands and concise-mode methodology.
+- `references/scoring-methodology.md`: scoring bands, concise-mode methodology, score jitter, CRC-32 docx workaround, pending-student discovery, essay scoring tier system.
+- `references/wordml-doc-extraction.md`: extracting text from WordML flat XML `.doc` files (学生答案 section), binary .doc via antiword, case-insensitive .DOCX matching, orphan file fallback.
+- `references/essay-grading.md`: text-based essay assignment grading (一课一文, 调研报告) — word count, personal thinking, dimension coverage.
+- `references/competition-ranking-scoring.md`: grading assignments by MNIST competition ranking (实验五 workflow, score bands, edge cases).
 - `references/script-usage.md`: script command cookbook.
 - `references/browser-harness-fallback.md`: Browser harness fallback map when a script fails or page/API structure changes.
+- `references/chaoxing-anti-bot-login.md`: Chaoxing anti-bot bypass worked example — AES login API, CDP cookie injection, iframe navigation patterns, and homework/work API endpoints.
 - `references/playwright-submit-fallback.md`: fallback submission approach.
 - `references/full-workflow-legacy.md`: archived long workflow with older page/API details.
+- `references/exam-objective-scores.md`: extracting auto-graded objective scores from markpaper (exams only).
+- `references/mnist-competition-grading.md`: grading experiment 5 based on MNIST classroom competition rankings instead of report content.
 
 ## Exam Notes
 
@@ -110,19 +116,7 @@ For the Word answer record package, use:
 
 Exam score drafts should preserve the objective score exported by Chaoxing and add reviewed subjective scores. Do not generate random or rough exam scores.
 
-## Final Grade Data Export
-
-To aggregate end-of-term grades, use `scripts/export_final_grade_data.py` to download a single Excel file containing homework, exam, and attendance sheets for a class. This wraps the 学情统计 one-click export and is read-only.
-
-```bash
-.venv/Scripts/python.exe scripts/export_final_grade_data.py \
-  --courseid 204565237 \
-  --clazzid 139247042 \
-  --cpi 492206399 \
-  --output all.xlsx
-```
-
-See `references/final-grade-export.md` for API details and `seltables` mapping.
+**Critical**: The Word export does NOT contain objective scores. Extract them from the markpaper page using `references/exam-objective-scores.md` before drafting totals.
 
 ## Output Contracts
 
@@ -145,10 +139,39 @@ Every score must be inside the teacher-confirmed score range. In `random` mode, 
 ## Pitfalls
 
 - Browser login state and script cookie state can disagree; a browser redirect to login does not invalidate a separately stored cookie file by itself.
-- Keep `cx_cookies.txt` in the skill directory as `./cx_cookies.txt`; avoid baking environment-specific absolute paths into commands or reports.
+- Keep `cx_cookies.txt` in the skill directory as `./cx_cookies.txt`; avoid baking environment-specific absolute paths into commands or paths into the normal workflow.
+- **Word导出不含客观题分数**：`download_exam_zips.py --format word` 导出的所有学生的 `exported_score` 都是 0。客观题实际分数存储在超星的 markpaper 页面中，需要通过浏览器访问 `markUrl` 提取 `fullScore<id>` 和 `score<id>` 输入框的值。
+- **markpaper页面是JS渲染的**：markpaper 页面通过 JavaScript 动态加载题目和分数数据，curl 只能获取空壳 HTML。必须用浏览器（如 Obscura）加载页面并等待渲染完成后提取数据。浏览器需要先登录超星。
+- **脚本优先原则**：用户明确要求"不要用浏览器，用脚本"。如果脚本能完成的任务，不要切换到浏览器。只有在脚本无法获取数据（如 JS 渲染页面）时才使用浏览器作为 fallback。
 - Do not download or inspect assignment files before score range and mode are confirmed.
 - Do not use XLS import when unsubmitted rows are present unless they are removed and the exact import plan is confirmed.
 - Do not treat `batch_grade.py` metrics as final grades by themselves.
 - Do not claim content quality in `random` mode.
 - Do not submit scores until the teacher has seen the exact score list and explicitly confirmed it.
-- Do not commit cookies, downloaded student submissions, generated reports, or score CSVs containing student data unless explicitly requested.
+- Do not commit cookies, downloaded student submissions, generated score CSVs containing student data unless explicitly requested.
+- **CRC-32 corrupted DOCX**: When `python-docx` fails with `Bad CRC-32 for file 'word/media/imageN.png'`, the text is still recoverable by extracting `word/document.xml` from the zip directly. See `references/scoring-methodology.md` → "Handling CRC-32 Corrupted DOCX Files". This counts as agent-side direct inspection; score the student using recovered char/img counts.
+- **Uniform scores in concise mode**: The first-pass formula often gives everyone the same score. Teachers reject uniform scores. Always apply ±1-2 random jitter (with a fixed seed for reproducibility) clamped to the teacher-confirmed floor before showing the draft. See `references/scoring-methodology.md` → "Score Differentiation".
+- **Partially-graded assignments**: When only some students need grading (pending_review < submitted), use a dry-run with a dummy all-students CSV to find `current=0` rows, then submit only for those students. See `references/scoring-methodology.md` → "Finding Pending Students".
+- **Class name search**: Students/teachers may use abbreviated class names (e.g., "智科2301" vs the actual "智能科技2301-闵"). Always search with `--class-contains "闵"` (the teacher's name suffix) to find the right class when the abbreviated name doesn't match.
+- **Script failure → check GitHub first**: When a script (especially `download_exam_zips.py`, `submit_exam_scores.py`, or any recently-added script) fails with unexpected errors (missing arguments, unrecognized flags, API changes), check if the skill repo on GitHub has a newer version before falling back to browser automation. The user's source repo is `meanpeng/hermes-skill-chaoxing-grading`. Update by cloning to `/tmp/` and rsync-ing to the skill directory (preserve `cx_cookies.txt` and local `exam_materials/`).
+- **Exam Word export ≠ scores**: The Word answer record export (`download_exam_zips.py --format word`) does NOT include objective scores — `exported_score` will be `0` for all students. The actual auto-graded objective scores live in the markpaper page. See `references/exam-objective-scores.md` for extraction workflow.
+- **Exam markpaper score structure**: On the markpaper page, `fullScore<id>` hidden inputs hold the per-question maximum, and `score<id>` text inputs hold the student's actual score (readonly). Both must be read; comparing them reveals which questions the student got wrong. The `sumScore` input shows the total but starts at 0 until the teacher submits.
+- **Students in mark-list but not in downloaded materials**: A student may appear in the Chaoxing mark-list (with a `current=0` score) but NOT in the downloaded assignment zip's `grading_metrics.csv`. This happens when the student registered under a different name, joined the class late, or their submission used a non-standard file name. To find their student ID, query the mark-list API directly (fetch pages 1 and 2, parse HTML for name→student_id). See `references/competition-ranking-scoring.md` step 2 for code.
+- **Competition-ranking-based scoring**: When grading 实验五 (or similar competition-tied assignments), the teacher may ask to score by MNIST competition ranking instead of report content. Use `session_search` to find past scoring schemes if the teacher references a previous class. See `references/competition-ranking-scoring.md` for the full workflow, score bands, and edge case handling.
+- **Partial batch grading**: When `pending_review < submitted` (only some students need grading), run a dry-run with a dummy all-students CSV to find rows with `current=0`, then submit a CSV containing only those pending students. This avoids overwriting existing grades.
+- **CRC-32 corrupted docx**: When `python-docx` throws `Bad CRC-32`, the file is still readable. Open it as a zip and extract text from `word/document.xml` directly. See `references/scoring-methodology.md` → "Handling CRC-32 Corrupted DOCX Files".
+- **Concise mode uniformity**: The first-pass formula clusters most students at the same score (e.g., all 95). Always apply ±1-2 jitter with a teacher-confirmed floor before showing drafts. See `references/scoring-methodology.md` → "Score Differentiation".
+- **Dual .docx/.doc files in student submissions**: When extracting student submissions from Chaoxing assignment packages, some students may have BOTH a `.docx` and a `.doc` file in their extracted folder. Always prefer `.docx` over `.doc` when both exist — the `.docx` is the actual student submission with full content, while the `.doc` is often a WordML flat XML wrapper (starts with `<?xml version="1.0"?>` and `<w:wordDocument>`) that python-docx cannot open, yielding only ~130 chars of XML metadata instead of the real essay text. If only a `.doc` file exists and it is WordML format, parse it as XML and extract text from `w:t` elements. See `references/steps/04-materials.md` → "Dual File Extraction".
+- **Uppercase .DOCX extension**: Some students upload files with uppercase `.DOCX` extension. File matching that only checks `.lower().endswith('.docx')` or `.endswith('.docx')` (case-sensitive) will miss these. Always use case-insensitive matching when scanning for docx files. This caused 陈方渲 (233080452) to get 0 extracted text and a default 80 score until caught.
+- **WordML .doc with `学生答案` section**: `prepare_work_materials.py` may only extract a subset of students (e.g. 23/33 or 30/34). The missing students have WordML flat XML `.doc` files where the essay text is inside a `<w:t>` element after `学生答案：` and before `正确答案：`, with `<w:br />` tags as line breaks inside the `<w:t>`. Standard WordML parsing (extracting all `w:t` elements) returns ~190 chars because the essay is one giant `w:t` with embedded `<w:br/>` that gets lost. See `references/wordml-doc-extraction.md` for the correct extraction recipe.
+- **workAnswerId is class-specific**: When grading multiple classes in sequence, workAnswerIds from one class's mark-list will NOT match another class. Always fetch workAnswerIds fresh from each class's own mark-list using the correct `clazzid` and `workid`. Reusing workAnswerIds from a previous class causes all submissions to fail with "no submitted mark-list row matched" in dry-run.
+- **Batch grading multiple classes**: When the teacher says "批X班" after a previous class was just graded with confirmed scoring setup, the scoring parameters (score range, mode, assignment requirements) carry over. Do not re-ask for score range and mode — proceed directly to download, extract, evaluate, and show the draft. Only re-confirm if the assignment title or requirements differ.
+- **Essay scoring: dimension coverage is primary factor**: For essay-type assignments (一课一文 etc.) with multi-dimensional requirements (e.g. "技术背景/发展现状/前沿成果/未来方向"), the teacher's explicit preference is that dimension coverage should be the PRIMARY scoring factor — not word count. A student who writes 7000+ words but only covers 4/8 dimension keywords should score LOWER than a student who writes 3000 words but covers 8/8. Word count and personal thinking length are secondary modifiers. Scores must have visible spread (80-100 range, not clustered). 100 is acceptable for truly excellent work. See `references/scoring-methodology.md` → "Essay Scoring Tier System".
+- **WordML `.doc` `<w:br/>` truncation**: Chaoxing Word exports embed `<w:br/>` (line break) tags *inside* `<w:t>` elements. Standard regex extraction `re.findall(r'<w:t[^>]*>([^<]+)</w:t>', ...)` truncates at the first `<w:br/>`, silently losing most of the student's answer. Always replace `<w:br/>` with `\n` *before* extracting text, and prefer extracting the "学生答案" → "正确答案" section to isolate the answer from system metadata. See `references/steps/04-materials.md` → "WordML `.doc` Fallback".
+- **Case-sensitive `.DOCX` extension**: Chaoxing exports sometimes produce files with uppercase `.DOCX` extension. On Linux, `f.endswith(".docx")` is case-sensitive and will miss these files, causing silent extraction failures. Always use `f.lower().endswith(".docx")` for file matching.
+- **batch_submit_scores.py silently no-ops without a browser**: Running `batch_submit_scores.py --confirm-submit` from a plain terminal prints the score list and `CONFIRMED SUBMIT MODE: writing scores to Chaoxing.` but writes NOTHING — its submit path requires a browser automation environment providing `cdp()`/`js()` globals (`require_browser_submit_environment` returns an error only inside `submit_scores()`, after the plan is printed). For terminal/API writes always use `scripts/submit_scores.py --method list-input --confirm-submit`, then re-fetch the mark-list and diff every student's `current` against the CSV (58/58-style verification) before reporting success.
+- **Metadata-only evidence is not plagiarism (teacher ruling 2026-09, 实验六)**: Same docx editor account (lastModifiedBy) with NO text/image similarity is not accepted as proof of copying — grade those students normally. Hard evidence requires content overlap: same-bytes real output screenshots, or ≥97% text similarity, or both.
+- **Mark-list API pagination**: The mark-list endpoint (`/mooc2-ans/work/mark-list`) requires `pages` and `size` parameters for pagination. Using only `prePageSize`/`prePageNum` (or `pageNum`/`pageSize`) returns the same first 20 students on every page. The server caps page size at 20 regardless of `prePageSize` value. Check `totalPage` in the HTML response to determine how many pages to fetch. See `references/competition-ranking-scoring.md` step 2.
+- **指导书抄送检查 (实验八 workflow)**: When the teacher supplies the 实验指导书 and allows copying its 原理/步骤/环境 sections, raw pairwise text similarity is inflated by (a) the guide sections everyone copies and (b) the shared report template (~1000+ chars of 成绩统计表/报告头). Compute per-student `guide_matched` (difflib blocks ≥50 vs normalized guide text, mapped per guide section) plus regex-matched `template_len`, then band pairs on NET similarity = matched − min(ban_a, ban_b). Raw ≥90% pairs can drop to near-zero net (false alarms); genuine copy stays high (e.g. 96.7% net on 8.6k shared analysis prose). Check "0 own images" students separately (`own_img==0`, crest hash excluded) — borrowed same-byte real screenshots violate the teacher's "图和文字得有自己的" rule even when text is independent.
+- **pip index broken on this server**: pip.conf points to Tencent internal mirror `mirrors.tencentyun.com` which is unreachable; install with `pip install <pkg> -i https://pypi.org/simple` (e.g. pycryptodome for the login script).
+
