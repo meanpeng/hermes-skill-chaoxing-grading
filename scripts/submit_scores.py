@@ -105,8 +105,12 @@ def mark_list_params(args, page_num):
 
 def parse_mark_list_rows(html):
     rows = []
-    for chunk in re.findall(r'(<ul class="dataBody_td" id="\d+".*?</ul>)', html, re.S):
-        answer_id = first_match(chunk, r'<ul class="dataBody_td" id="(\d+)"')
+    # 按行起始位置切分，避免行内嵌套UL导致非贪婪匹配提前截断
+    starts = [m.start() for m in re.finditer(r'<ul class="dataBody_td[^"]*" id="\d+"', html)]
+    for i, pos in enumerate(starts):
+        end = starts[i + 1] if i + 1 < len(starts) else len(html)
+        chunk = html[pos:end]
+        answer_id = first_match(chunk, r'<ul class="dataBody_td[^"]*" id="(\d+)"')
         person_id = first_match(chunk, r'createid="(\d+)"')
         name = clean(first_match(chunk, r'<div class="py_name"[^>]*>(.*?)</div>'))
         values = [clean(value) for value in re.findall(r'<li class="taskBody_con[^"]*">(.*?)</li>', chunk, re.S)]
