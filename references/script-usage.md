@@ -111,7 +111,7 @@ python scripts/download_work_zips.py \
   --class-contains "闵" \
   --assignment-contains "实验五" \
   --format word \
-  --output-dir downloads/ai-principles \
+  --output-dir workspace/ai-principles \
   --confirm-download
 ```
 
@@ -123,7 +123,7 @@ For downloaded zip files, use the batch preparation script instead of manually e
 
 ```bash
 python scripts/prepare_work_materials.py \
-  --zip-dir downloads/ai-principles \
+  --zip-dir workspace/ai-principles \
   --output-dir prepared/ai-principles \
   --mode metrics \
   --sample 5
@@ -170,7 +170,7 @@ python scripts/download_exam_zips.py \
   --class-contains "闵" \
   --exam-contains "阶段性测验1" \
   --format word \
-  --output-dir downloads/ai-principles-exams \
+  --output-dir workspace/ai-principles-exams \
   --confirm-download
 ```
 
@@ -180,7 +180,7 @@ If the download-center record is still `导出中`, wait or rerun the same scrip
 
 ```bash
 python scripts/prepare_exam_materials.py \
-  --input-dir downloads/exam-word-extract \
+  --input-dir workspace/exam-word-extract \
   --output-dir prepared-exam/exam-title \
   --json
 ```

@@ -53,3 +53,19 @@ Thumbs.db
 # 本地抓取/批改材料（含学生信息）
 work/
 prepared-*/
+
+# 统一工作目录（下载、解压、生成的临时文件）
+workspace/
+
+# 旧的工作目录（已废弃，保留以防万一）
+exam-materials/
+exam_materials/
+
+
+# runtime data / ad-hoc
+prepared/
+exam_materials/
+cx_cookies.txt
+__pycache__/
+*.pyc
+*.log

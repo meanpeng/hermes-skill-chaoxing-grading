@@ -34,7 +34,7 @@ BASE64_IMAGE_RE = re.compile(r"(?P<data>/9j/[A-Za-z0-9+/=\s]+|iVBORw0KGgo[A-Za-z
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare Chaoxing exam .doc Word-HTML exports.")
     parser.add_argument("--input-dir", required=True, help="Directory containing exported .doc files.")
-    parser.add_argument("--output-dir", required=True, help="Directory for parsed reports and extracted images.")
+    parser.add_argument("--output-dir", default="workspace/exam-materials", help="Directory for parsed reports and extracted images.")
     parser.add_argument("--json", action="store_true", help="Print JSON summary.")
     return parser.parse_args()
 

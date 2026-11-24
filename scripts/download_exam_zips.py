@@ -42,7 +42,7 @@ def parse_args():
     parser.add_argument("--base-clazzid", help="Course shell clazzid. Auto-detected when omitted.")
     parser.add_argument("--discover-json", help="Read targets from a previous chaoxing_discover.py --json output.")
     parser.add_argument("--format", choices=sorted(FORMAT_PARAMS), default="word", help="Export package format.")
-    parser.add_argument("--output-dir", default="downloads/chaoxing-exam-zips", help="Directory for downloaded zip files.")
+    parser.add_argument("--output-dir", default="workspace/exam-zips", help="Directory for downloaded zip files.")
     parser.add_argument("--poll-interval", type=float, default=5.0, help="Seconds between download-center checks.")
     parser.add_argument("--timeout", type=float, default=180.0, help="Seconds to wait for each packaged zip.")
     parser.add_argument("--force-pack", action="store_true", help="Trigger a new package even if an existing zip is found.")

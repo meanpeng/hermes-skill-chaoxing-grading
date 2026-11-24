@@ -24,7 +24,7 @@ Useful calibration table:
 student_id | student_name | chars | images | sections | key_requirement | status | provisional_band | notes
 ```
 
-Use `references/scoring-methodology.md` for suggested bands and first-pass formula.
+Use `references/scoring-methodology.md` for suggested bands, first-pass formula, **score differentiation (jitter)**, **CRC-32 corrupted DOCX handling**, and **finding pending students in partially-graded assignments**.
 
 Chinese calibration prompt template:
 
@@ -46,6 +46,37 @@ Chinese calibration prompt template:
 ## Detailed Mode
 
 Open every available report/attachment before assigning final draft scores. Evidence must cite actual observed content, not only metrics.
+
+## Exam Score Drafting
+
+For exams, the score draft must combine:
+1. **Objective scores** (auto-graded by Chaoxing): extracted from markpaper page via `references/exam-objective-scores.md`
+2. **Subjective scores** (teacher-reviewed): from agent inspection of each student's answers
+
+The Word export does NOT contain objective scores. Always extract them separately.
+
+Exam score draft table format:
+
+```text
+| 学号 | 姓名 | 客观分 | Q16 | Q17 | 总分 |
+|------|------|--------|-----|-----|------|
+| <sid> | <name> | <obj>/80 | <subj1>/10 | <subj2>/10 | <total>/100 |
+```
+
+Include grading notes for subjective questions:
+- Q16 (计算题): 评分依据（计算过程正确性、结论正确性）
+- Q17 (简答题): 评分依据（核心区别描述、应用场景完整性）
+
+For image-based answers (`[image-answer]` in the parsed markdown), use vision analysis to extract and grade the content.
+
+Exam CSV format for `submit_exam_scores.py`:
+
+```csv
+student_id,student_name,total_score
+233050227,魏苗翰,95
+```
+
+The `submit_exam_scores.py` script uses `way=singlesum` — it submits a single total score per student, not per-question scores.
 
 ## Score Draft Schema
 

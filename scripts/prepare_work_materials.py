@@ -22,7 +22,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Prepare downloaded Chaoxing work zip materials.")
     parser.add_argument("--zip-file", action="append", default=[], help="Downloaded work zip. Repeatable.")
     parser.add_argument("--zip-dir", help="Directory containing downloaded .zip files.")
-    parser.add_argument("--output-dir", default="prepared-work-materials", help="Output directory.")
+    parser.add_argument("--output-dir", default="workspace/prepared-work-materials", help="Output directory.")
     parser.add_argument("--mode", choices=("materials", "metrics"), default="metrics")
     parser.add_argument("--min-chars", type=int, default=batch_grade.DEFAULT_MIN_CHARS)
     parser.add_argument("--sample", type=int, default=0, help="Print a representative sample per zip.")
