@@ -61,11 +61,3 @@ workspace/
 exam-materials/
 exam_materials/
 
-
-# runtime data / ad-hoc
-prepared/
-exam_materials/
-cx_cookies.txt
-__pycache__/
-*.pyc
-*.log
